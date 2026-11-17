@@ -2,20 +2,1039 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>F7 Тренажёр</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#3730a3">
+<title>F7 Тренажёр — ACCA Financial Reporting</title>
 <style>
-  body{margin:0;font-family:sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;
-       background:linear-gradient(135deg,#3730A3,#7C3AED);color:#fff;text-align:center;padding:24px;box-sizing:border-box}
-  h1{font-size:64px;margin:0 0 12px} p{font-size:17px;line-height:1.5;max-width:420px}
+:root{
+  --bg:#f4f5fb;--card:#ffffff;--ink:#1c1f2e;--muted:#6b7085;--line:#e4e6f0;
+  --pri:#4f46e5;--pri2:#7c3aed;--pri-soft:#eef0ff;
+  --ok:#16a34a;--ok-soft:#e8f8ee;--bad:#dc2626;--bad-soft:#fdecec;
+  --warn:#d97706;--warn-soft:#fff6e6;--teal:#0d9488;--teal-soft:#e6f7f5;
+  --shadow:0 6px 24px rgba(40,45,90,.08);--r:18px;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0f1220;--card:#181c2e;--ink:#eceefb;--muted:#9aa0bd;--line:#2a2f48;
+  --pri-soft:#23264a;--ok-soft:#12301f;--bad-soft:#3a1a1d;--warn-soft:#3a2a10;--teal-soft:#0f2e2c;
+  --shadow:0 6px 24px rgba(0,0,0,.35)}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+.wrap{max-width:760px;margin:0 auto;padding:0 14px 90px}
+/* hero */
+.hero{background:linear-gradient(135deg,#3730a3,#7c3aed 60%,#db2777);color:#fff;
+  padding:26px 18px 30px;border-radius:0 0 28px 28px;margin:0 -14px 18px;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.08)}
+.hero h1{margin:0;font-size:26px;letter-spacing:.2px}
+.hero p{margin:4px 0 0;opacity:.9;font-size:14px}
+.hero-row{display:flex;align-items:center;gap:16px;margin-top:18px}
+.hero-stats{font-size:14px;opacity:.95}
+.hero-stats b{font-size:20px}
+.tip{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:18px;display:flex;gap:12px;align-items:flex-start}
+.tip .av{font-size:30px;line-height:1}
+.tip small{color:var(--muted);display:block;font-weight:600;margin-bottom:2px}
+.sec-h{font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:22px 4px 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.tc{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px;text-align:left;
+  display:flex;flex-direction:column;gap:6px;transition:transform .15s;border:2px solid transparent;min-height:132px}
+.tc:active{transform:scale(.97)}
+.tc .ic{font-size:30px}
+.tc .code{font-size:12px;font-weight:800;color:var(--pri)}
+.tc .nm{font-weight:700;font-size:15px;line-height:1.25}
+.badge{margin-top:auto;font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;align-self:flex-start}
+.b-new{background:var(--pri-soft);color:var(--pri)}
+.b-ok{background:var(--ok-soft);color:var(--ok)}
+.b-mid{background:var(--warn-soft);color:var(--warn)}
+.b-bad{background:var(--bad-soft);color:var(--bad)}
+/* topic header */
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 8px;display:flex;align-items:center;gap:10px}
+.back{width:40px;height:40px;border-radius:12px;background:var(--card);box-shadow:var(--shadow);font-size:20px;display:flex;align-items:center;justify-content:center}
+.top .tt{font-weight:800;font-size:17px;line-height:1.2}
+.top .tt small{display:block;color:var(--pri);font-size:12px}
+.tabs{display:flex;background:var(--card);border-radius:14px;padding:4px;box-shadow:var(--shadow);margin:6px 0 14px}
+.tabs button{flex:1;padding:10px;border-radius:11px;font-weight:700;color:var(--muted)}
+.tabs button.on{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff}
+/* slide */
+.slide{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:20px 18px;min-height:380px;
+  animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.slide h2{margin:0 0 14px;font-size:20px;line-height:1.25}
+.s-title{text-align:center;padding:30px 6px}
+.s-title .big{font-size:76px;line-height:1;margin-bottom:14px;animation:pop .5s ease}
+@keyframes pop{0%{transform:scale(.4)}70%{transform:scale(1.12)}100%{transform:scale(1)}}
+.s-title h2{font-size:24px}
+.s-title p{color:var(--muted);margin:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.cardx{border-radius:16px;padding:12px;background:var(--pri-soft)}
+.cardx:nth-child(4n+2){background:var(--teal-soft)}
+.cardx:nth-child(4n+3){background:var(--warn-soft)}
+.cardx:nth-child(4n+4){background:var(--ok-soft)}
+.cardx .ci{font-size:28px}
+.cardx b{display:block;margin:4px 0 2px;font-size:15px}
+.cardx span{font-size:14px;color:var(--muted)}
+ul.lst{list-style:none;padding:0;margin:0}
+ul.lst li{padding:9px 0 9px 32px;position:relative;border-bottom:1px dashed var(--line)}
+ul.lst li:last-child{border:none}
+ul.lst li:before{content:"✓";position:absolute;left:4px;top:8px;width:20px;height:20px;border-radius:50%;
+  background:var(--ok-soft);color:var(--ok);font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center}
+.trap li:before{content:"!";background:var(--bad-soft);color:var(--bad)}
+.flow{display:flex;flex-direction:column;gap:0}
+.fs{display:flex;gap:12px;align-items:flex-start}
+.fs .num{flex:0 0 34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;
+  font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(79,70,229,.35)}
+.fs .tx{background:var(--pri-soft);border-radius:14px;padding:9px 12px;flex:1}
+.farr{margin:2px 0 2px 15px;width:4px;height:16px;background:linear-gradient(var(--pri),var(--pri2));border-radius:4px}
+.formula{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:17px;font-weight:700;text-align:center;
+  background:linear-gradient(135deg,var(--pri-soft),var(--teal-soft));border-radius:16px;padding:16px 10px;margin-bottom:12px;white-space:pre-wrap}
+table.pt{width:100%;border-collapse:collapse;font-size:14px}
+table.pt td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+table.pt td:first-child{font-weight:800;color:var(--pri);white-space:nowrap}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cmp .col{border-radius:16px;padding:12px}
+.cmp .col h3{margin:0 0 6px;font-size:15px}
+.cmp .col ul{margin:0;padding-left:18px;font-size:14px}
+.cmp .col li{margin:4px 0}
+.cl{background:var(--teal-soft)}.cr{background:var(--warn-soft)}
+.calc{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;background:#111827;color:#e5e7eb;
+  border-radius:14px;padding:14px;white-space:pre-wrap;line-height:1.6;overflow-x:auto}
+@media (prefers-color-scheme:dark){.calc{background:#0b0e18}}
+.note{margin-top:10px;font-size:14px;color:var(--muted)}
+.joke{margin-top:14px;display:flex;gap:10px;align-items:flex-start}
+.joke .av{font-size:30px;line-height:1}
+.joke .bub{background:var(--warn-soft);border-radius:4px 16px 16px 16px;padding:9px 12px;font-size:14px}
+.joke .bub b{display:block;font-size:12px;color:var(--warn)}
+.en{margin-top:12px;border-left:4px solid var(--teal);background:var(--teal-soft);padding:9px 12px;border-radius:0 12px 12px 0;font-size:14px;font-style:italic}
+.en:before{content:"🇬🇧 ";font-style:normal}
+.nav{display:flex;align-items:center;gap:10px;margin-top:14px}
+.nav .btn{flex:1}
+.btn{padding:13px 16px;border-radius:14px;font-weight:800;text-align:center;background:var(--card);box-shadow:var(--shadow)}
+.btn.pri{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff}
+.btn:disabled{opacity:.4}
+.dots{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.dots i{width:7px;height:7px;border-radius:9px;background:var(--line);transition:all .2s}
+.dots i.on{width:20px;background:var(--pri)}
+.cnt{text-align:center;color:var(--muted);font-size:13px;margin-top:6px}
+/* quiz */
+.q{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:15px;margin-bottom:12px;border:2px solid transparent}
+.q.right{border-color:var(--ok)}.q.wrong{border-color:var(--bad)}
+.q .qn{font-size:12px;font-weight:800;color:var(--pri);margin-bottom:4px}
+.q .qt{font-weight:700;margin-bottom:10px}
+.opt{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:12px;border:2px solid var(--line);margin-bottom:7px;font-size:15px;background:var(--card)}
+.opt.sel{border-color:var(--pri);background:var(--pri-soft)}
+.opt.cor{border-color:var(--ok);background:var(--ok-soft)}
+.opt.inc{border-color:var(--bad);background:var(--bad-soft)}
+.exp{margin-top:6px;font-size:14px;background:var(--pri-soft);border-radius:12px;padding:9px 12px}
+.res{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:20px;text-align:center;margin-bottom:14px;animation:fade .3s}
+.res h3{margin:8px 0 4px;font-size:22px}
+.res p{margin:0;color:var(--muted)}
+.qbar{position:sticky;bottom:10px;margin-top:6px}
+.prog-line{height:8px;background:var(--line);border-radius:9px;overflow:hidden;margin:10px 0 14px}
+.prog-line i{display:block;height:100%;background:linear-gradient(90deg,var(--pri),#db2777);border-radius:9px;transition:width .3s}
+.foot{text-align:center;color:var(--muted);font-size:12px;margin-top:30px}
+.reset{color:var(--bad);font-weight:700;font-size:13px;margin-top:8px}
 </style>
 </head>
 <body>
-<div>
-  <h1>F7</h1>
-  <p>Это временная страница-заглушка.</p>
-  <p>Загрузите файл <b>F7_Trenazher.html</b> в корень репозитория (или замените
-     <b>app/src/main/assets/index.html</b>) — GitHub Actions соберёт новую версию приложения.</p>
-</div>
+<div id="app"></div>
+<script>
+"use strict";
+const T=[];
+/* ===== PART 1 ===== */
+T.push({id:"fw",sec:"A. Основы",n:"Framework",name:"Conceptual Framework",i:"🏛",
+slides:[
+{t:"title",i:"🏛",h:"Conceptual Framework",s:"«Конституция» IFRS: принципы, на которых стоят все стандарты"},
+{t:"cards",h:"Зачем он нужен",cards:[
+ ["✍️","Для IASB","Основа для написания новых стандартов"],
+ ["🧭","Для бухгалтера","Нет стандарта? Решаем по принципам Framework"],
+ ["🎯","Цель отчётности","Полезная информация инвесторам, банкам, кредиторам"],
+ ["⚖️","Не стандарт","Framework не отменяет требования IFRS"]],
+ joke:"То есть это не закон, а Конституция? Тогда я — Президент бухгалтерии!"},
+{t:"cards",h:"5 элементов отчётности",cards:[
+ ["🏭","Актив","Ресурс, который **контролируем** сейчас, из-за **прошлого события**, с потенциалом выгоды"],
+ ["📄","Обязательство","Текущая **обязанность** передать ресурс из-за **прошлого события**"],
+ ["🟰","Капитал","Активы − Обязательства"],
+ ["📈","Доход","Рост капитала, **кроме** взносов владельцев"],
+ ["📉","Расход","Снижение капитала, **кроме** выплат владельцам"]],
+ joke:"Сотрудники — наш главный актив! — В речи да. В балансе нет: их нельзя контролировать."},
+{t:"compare",h:"Определение ≠ признание",
+ l:{h:"Определение",items:["Подходит ли под «актив»?","Свой бренд: выгоду даёт ✔"]},
+ r:{h:"Признание",items:["Можно ли поставить в баланс?","Нужна надёжная оценка","Свой бренд: нельзя оценить ✘"]},
+ note:"Неисполненный договор (никто ничего не сделал) → ни актива, ни обязательства."},
+{t:"compare",h:"Качественные характеристики",
+ l:{h:"Фундаментальные",items:["**R**elevance — «это важно?» (+ materiality)","**F**aithful representation — «это правда?»: полно, нейтрально, без ошибок"]},
+ r:{h:"Усиливающие",items:["**C**omparability","**V**erifiability","**T**imeliness","**U**nderstandability"]},
+ note:"Запомни: R + F главные, C-V-T-U усиливают. Substance over form — часть F."},
+{t:"cards",h:"Measurement: 4 способа оценки",cards:[
+ ["🧾","Historical cost","Сколько **заплатили** (прошлое)"],
+ ["🏷","Fair value","За сколько **продадим** сегодня"],
+ ["🔁","Current cost","За сколько **купим заново** сегодня"],
+ ["⚙️","Value in use","Сколько **заработаем**, используя"]],
+ note:"Свежая цифра → выше R, но ниже V/F. Идеальной оценки нет."},
+{t:"bars",h:"Capital maintenance: какая прибыль «настоящая»?",bars:[["Financial (номинальная): 150 − 100",50],["Financial (инфляция 10%): 150 − 110",40],["Physical (замена 120): 150 − 120",30]],
+ note:"Магазин: капитал 100, продал за 150. При росте цен historical cost **завышает** прибыль."},
+{t:"compare",h:"Rules-based vs Principles-based",
+ l:{h:"Rules (US GAAP)",items:["Чёткие границы (75%)","Легко обойти: делаем 74%"]},
+ r:{h:"Principles (IFRS)",items:["Смотрим на суть","Труднее обойти","Но хуже сопоставимость"]},
+ en:"Rules-based standards set bright-line thresholds, so transactions can be structured to avoid them."}
+],
+qs:[
+{q:"Что НЕ является фундаментальной качественной характеристикой?",o:["Relevance","Faithful representation","Comparability","Все три перечисленные — фундаментальные"],a:2,e:"Фундаментальные — только R и F. Comparability — усиливающая."},
+{q:"Что НЕ входит в определение актива по Framework?",o:["Контроль","Прошлое событие","Потенциал экономических выгод","Юридическое право собственности"],a:3,e:"Важен контроль, а не собственность (substance over form): арендованный склад тоже актив."},
+{q:"Artel подписал договор на покупку металла в декабре. Сейчас ноябрь, никто ничего не сделал. Что признаём?",o:["Актив и обязательство","Только обязательство","Ничего","Только расход"],a:2,e:"Неисполненный договор: событие (поставка) ещё не произошло."},
+{q:"Бренд Artel, созданный годами рекламы:",o:["Актив по стоимости рекламы","Не признаётся — нельзя надёжно оценить","Актив по fair value","Капитал"],a:1,e:"Определение может подходить, но признание требует надёжной оценки."},
+{q:"Акционер внёс в компанию 1 млрд сум. Это:",o:["Доход","Капитал","Обязательство","Выручка"],a:1,e:"Взносы владельцев — не доход, а капитал."},
+{q:"Директор просит занизить резерв по долгам, чтобы прибыль выглядела лучше. Что нарушено?",o:["Timeliness","Comparability","Neutrality (faithful representation)","Understandability"],a:2,e:"Намеренный перекос — нарушение нейтральности, части F."},
+{q:"Продали здание банку и обязались выкупить через 2 года дороже. По сути это:",o:["Продажа с прибылью","Кредит под залог здания","Аренда","Обмен"],a:1,e:"Substance over form: деньги получены и будут возвращены с «процентами»."},
+{q:"Ошибка 3 000 сум у компании с выручкой 1 трлн:",o:["Существенна, исправить","Несущественна (immaterial)","Нарушение comparability","Нарушение timeliness"],a:1,e:"Не повлияет на решения пользователей → immaterial."},
+{q:"Два оценщика оценили здание в 10 и 18 млрд. Какая характеристика под вопросом?",o:["Verifiability","Timeliness","Relevance","Understandability"],a:0,e:"Независимые эксперты не приходят к близкому результату."},
+{q:"Годовой отчёт за 2025 вышел в декабре 2026. Что страдает?",o:["Verifiability","Timeliness","Neutrality","Comparability"],a:1,e:"Информация опоздала для решений."},
+{q:"Кто пишет и выпускает стандарты IFRS?",o:["IFRS Foundation","IFRS Interpretations Committee","IASB","Advisory Council"],a:2,e:"Foundation управляет, IASB пишет, Committee разъясняет, Council советует."},
+{q:"Правильный порядок due process:",o:["Exposure Draft → Discussion Paper → Standard","Discussion Paper → Exposure Draft → Standard","Standard → Discussion Paper → Exposure Draft","Discussion Paper → Standard → Exposure Draft"],a:1,e:"Сначала обсуждение, потом проект, потом стандарт."},
+{q:"Капитал 200, товар продали за 260, инфляция 5%, замена товара стоит 230. Прибыль по physical capital maintenance:",o:["60","50","30","10"],a:2,e:"260 − 230 = 30. (Номинальная 60, с инфляцией 50.)"},
+{q:"При росте цен прибыль по historical cost обычно:",o:["Занижена","Завышена","Точная","Равна нулю"],a:1,e:"Не учитывается, что заменить активы стоит дороже."},
+{q:"Главная слабость principles-based подхода:",o:["Легко обойти границу","Требует суждения → хуже сопоставимость","Слишком много правил","Нет связи с сутью"],a:1,e:"Разные бухгалтеры могут применить принцип по-разному."}
+]});
+
+T.push({id:"ias16",sec:"B. Активы",n:"IAS 16",name:"Основные средства",i:"🏭",
+slides:[
+{t:"title",i:"🏭",h:"IAS 16 Property, Plant & Equipment",s:"Станки, здания, грузовики: покупка, амортизация, переоценка, продажа"},
+{t:"compare",h:"Что входит в cost",
+ l:{h:"✅ Входит",items:["Цена − скидки","Пошлины, невозм. налоги","Доставка, страховка в пути","Фундамент, монтаж, тест","Регистрация, номера"]},
+ r:{h:"❌ Не входит",items:["Возмещаемый НДС","Обучение персонала","Реклама, праздник запуска","Админ. расходы","Страховка на год работы"]},
+ joke:"А плов на открытии линии? — Вкусный, но в cost не входит 😄",
+ en:"Cost includes all costs directly attributable to bringing the asset to working condition."},
+{t:"cards",h:"3 метода амортизации",cards:[
+ ["📏","Straight-line","(Cost − residual) / срок"],
+ ["📉","Reducing balance","% × CA на начало года"],
+ ["🚚","Units of production","(Cost − residual) / весь объём × объём года"]],
+ note:"Метод отражает, как реально потребляется польза от актива."},
+{t:"trap",h:"Ловушки амортизации",items:["**Земля** не амортизируется → отделяем от здания","Начинаем, когда актив **готов** к использованию","Покупка/продажа в середине года → **по месяцам**","Продано **1 октября** → в этом году **9** месяцев","Изменение срока → CA / **оставшиеся** годы","Reducing balance: % от **CA**, не от cost"]},
+{t:"flow",h:"Последующие затраты",steps:["Масло, фильтры, мелкий ремонт → **расход**","Замена **крупной части** (двигатель) → **актив**","Старая часть → **списываем** (её CA в P&L)","Компоненты с разным сроком → амортизируем **отдельно**"]},
+{t:"compare",h:"Переоценка (revaluation model)",
+ l:{h:"📈 Вверх",items:["Рост → **OCI** (резерв)","Если раньше был убыток в P&L — сначала отменяем его в P&L"]},
+ r:{h:"📉 Вниз",items:["Сначала уменьшаем **резерв** этого актива","Остаток → **P&L**"]},
+ note:"Переоцениваем весь класс активов и регулярно. Резерв = FV − **CA после амортизации**."},
+{t:"calc",h:"Excess depreciation: пример",lines:["Здание 1 000, 20 лет → 50/год","Через 5 лет: CA = 750","Переоценка до 1 200","Резерв = 1 200 − 750 = 450","Новая dep = 1 200 / 15 = 80","Excess = 80 − 50 = 30/год","Dr Reval. surplus 30","  Cr Retained earnings 30","(не через P&L!)"]},
+{t:"flow",h:"Продажа (disposal)",steps:["Амортизация **до даты продажи**","CA на дату продажи","Чистая выручка = цена − расходы на продажу","Прибыль/убыток = выручка − CA → **P&L**","Остаток резерва → **retained earnings** (no recycling)"],
+ joke:"Продали за 1 400 — значит прибыль 1 400! — Эх, Бахтиёр-ака… сначала CA вычтем."}
+],
+qs:[
+{q:"Цена станка 1 000, пошлина 50, возмещаемый НДС 120, доставка 30, обучение 20. Cost = ?",o:["1 220","1 100","1 080","1 200"],a:2,e:"1 000 + 50 + 30 = 1 080. НДС зачтут, обучение — расход."},
+{q:"Что включается в cost станка?",o:["Реклама новой линии","Монтаж и тестовый запуск","Обучение операторов","Страховка на год работы"],a:1,e:"Монтаж и тест доводят актив до рабочего состояния."},
+{q:"Cost 500, residual 50, срок 5 лет, straight-line. Амортизация в год:",o:["100","90","110","50"],a:1,e:"(500 − 50) / 5 = 90."},
+{q:"Cost 800, reducing balance 25%. Амортизация во 2-й год:",o:["200","150","160","100"],a:1,e:"Год 1: 200 → CA 600. Год 2: 25% × 600 = 150."},
+{q:"1 апреля куплено здание за 3 000, из них земля 1 000, срок 40 лет. Амортизация до 31 декабря:",o:["56.25","50","37.5","75"],a:2,e:"(3 000 − 1 000) / 40 = 50 × 9/12 = 37.5."},
+{q:"Станок 600, 10 лет. Через 4 года общий срок пересмотрен до 12 лет. Новая амортизация:",o:["30","45","50","60"],a:1,e:"CA 360 / оставшиеся (12 − 4 = 8) = 45."},
+{q:"Замена масла и фильтров в грузовике:",o:["Капитализируем","Расход","Резерв","Капитал"],a:1,e:"Обслуживание — не даёт новой пользы."},
+{q:"Заменили двигатель грузовика на новый. Учёт:",o:["Всё в расходы","Новый двигатель — актив, старый — списать","Добавить к cost, старый не трогать","Отразить в OCI"],a:1,e:"Крупная замена капитализируется, CA старой части списывается."},
+{q:"Самолёт: корпус 700 (25 лет), двигатели 300 (8 лет). Амортизация в год:",o:["40","65.5","50","37.5"],a:1,e:"700/25 = 28 + 300/8 = 37.5 → 65.5."},
+{q:"Здание cost 2 000, 40 лет. Через 10 лет переоценено до 2 400. Резерв переоценки:",o:["400","900","1 400","500"],a:1,e:"CA = 2 000 − 500 = 1 500. Резерв = 2 400 − 1 500 = 900."},
+{q:"То же здание. Новая годовая амортизация:",o:["60","50","80","48"],a:2,e:"2 400 / оставшиеся 30 лет = 80."},
+{q:"Excess depreciation переносится:",o:["В P&L как доход","Из резерва в retained earnings","Из retained earnings в резерв","В OCI"],a:1,e:"Перенос внутри капитала, не через P&L."},
+{q:"CA 1 120, резерв по этому зданию 420, FV упал до 600. Сколько в P&L?",o:["520","420","100","0"],a:2,e:"Падение 520: 420 из резерва, 100 в P&L."},
+{q:"Переоценённое здание: CA 960, резерв 360, продано за 1 100. Что верно?",o:["Прибыль 500 в P&L","Прибыль 140 в P&L, резерв 360 → retained earnings","Прибыль 140, резерв 360 → P&L","Убыток 140"],a:1,e:"1 100 − 960 = 140. Резерв — напрямую в RE (no recycling)."},
+{q:"Год заканчивается 31 декабря, актив продан 1 октября. Сколько месяцев амортизации в этом году?",o:["10","9","12","3"],a:1,e:"Январь–сентябрь = 9. Октябрь не считаем."}
+]});
+
+T.push({id:"ias23",sec:"B. Активы",n:"IAS 23",name:"Затраты по займам",i:"🏗",
+slides:[
+{t:"title",i:"🏗",h:"IAS 23 Borrowing Costs",s:"Когда проценты по кредиту становятся частью стоимости актива"},
+{t:"list",h:"Главная идея",items:["Проценты на **долгую стройку** (qualifying asset) → в **cost** актива","Логика 1: без кредита завод не построили бы — как кирпичи","Логика 2: **comparability** с покупкой готового завода (там проценты в цене)","Логика 3: во время стройки нет выручки — иначе ложные убытки"],
+ en:"Borrowing costs directly attributable to a qualifying asset are capitalised."},
+{t:"compare",h:"Qualifying asset?",l:{h:"✅ Да",items:["Завод (2 года стройки)","Корабль на верфи","Здание для аренды"]},r:{h:"❌ Нет",items:["Купленный готовый грузовик","Запасы, сделанные за час","Финансовые активы"]}},
+{t:"flow",h:"Начало, пауза, конец",steps:["**Начало**: есть расходы + проценты + идут работы (все три)","**Пауза**: стройку надолго остановили → проценты в расход","Короткая техническая пауза (бетон сохнет) → продолжаем","**Конец**: актив практически готов → дальше расход"]},
+{t:"formula",h:"Специальный кредит",f:"Капитализируем = проценты − доход от временного депозита",parts:[["Пример","2.0 млрд − 0.3 млрд = 1.7 млрд"]]},
+{t:"formula",h:"Общие кредиты",f:"Ставка = Σ проценты / Σ кредиты",parts:[["Кредит A","1 000 × 10% = 100"],["Кредит B","3 000 × 14% = 420"],["Ставка","520 / 4 000 = 13%"]],
+ joke:"Почему не (10% + 14%) / 2? — Кредит B в 3 раза больше, он и тянет ставку."},
+{t:"calc",h:"Применяем ставку ко времени",lines:["Расходы на стройку (ставка 13%):","1 января: 600 × 13% × 12/12 = 78","1 июля:   400 × 13% × 6/12  = 26","Капитализируем: 104","Расход P&L: 520 − 104 = 416"],note:"Капитализация не может превышать фактические проценты."}
+],
+qs:[
+{q:"Что из этого qualifying asset?",o:["Готовый грузовик","Завод, который строится 2 года","Товар, сделанный за день","Акции другой компании"],a:1,e:"Нужен значительный период, чтобы стать готовым."},
+{q:"Запасы, которые производятся быстро и регулярно:",o:["Qualifying asset","Не qualifying","Всегда капитализируют проценты","Капитализируют 50%"],a:1,e:"Быстрое производство не требует значительного времени."},
+{q:"Специальный кредит: проценты 2 000, доход от временного депозита неиспользованных средств 300. Капитализируем:",o:["2 300","2 000","1 700","300"],a:2,e:"Чистые проценты: 2 000 − 300."},
+{q:"Стройку надолго заморозили на 6 месяцев. Проценты за эти месяцы:",o:["В стоимость актива","В расходы P&L","В резерв","В капитал"],a:1,e:"Suspension: активная работа остановлена."},
+{q:"Капитализация заканчивается, когда:",o:["Кредит погашен","Актив практически готов","Начались продажи","Год закончился"],a:1,e:"Substantially complete → дальше проценты в расход."},
+{q:"Для начала капитализации нужно:",o:["Только взять кредит","Расходы + проценты + начатые работы","Только начать работы","Решение директора"],a:1,e:"Все три условия одновременно."},
+{q:"Общие кредиты: 1 000 под 10% и 3 000 под 14%. Ставка капитализации:",o:["12%","13%","14%","10%"],a:1,e:"(100 + 420) / 4 000 = 13%."},
+{q:"Ставка 13%. Расходы на стройку: 600 (1 января) и 400 (1 июля). Капитализируем за год:",o:["130","104","78","52"],a:1,e:"78 + 400 × 13% × 6/12 = 26 → 104."},
+{q:"Кредиты 2 000 под 8% и 2 000 под 12%. Расходы: 500 (1 янв), 800 (1 апр). Капитализируем:",o:["130","110","100","90"],a:1,e:"Ставка 10%: 50 + 800 × 10% × 9/12 = 60 → 110."},
+{q:"Капитализированная сумма не может быть больше:",o:["Стоимости актива","Фактических процентов за период","Выручки","Ставки ЦБ"],a:1,e:"Нельзя капитализировать больше, чем реально начислено."},
+{q:"Главная причина капитализации процентов:",o:["Уменьшить налоги","Проценты — часть затрат на создание актива","Повысить выручку","Так требует банк"],a:1,e:"Как кирпичи: без финансирования актива бы не было."},
+{q:"Специальный кредит 5 000 под 10% взят 1 апреля, стройка с 1 апреля, год до 31 декабря. Капитализируем:",o:["500","375","250","125"],a:1,e:"5 000 × 10% × 9/12 = 375."},
+{q:"Кредиты 10 000 под 50% и 1 000 под 10%. Ставка:",o:["30%","46.4%","50%","10%"],a:1,e:"5 100 / 11 000 ≈ 46.4%: большой кредит тянет ставку."},
+{q:"Бетон должен сохнуть 2 недели — это необходимая часть процесса. Капитализация:",o:["Приостанавливается","Продолжается","Прекращается","Переносится в OCI"],a:1,e:"Временная пауза, необходимая для процесса, — не suspension."},
+{q:"Проценты после того, как актив готов к использованию:",o:["Капитализируются","Расход P&L","Резерв","Не начисляются"],a:1,e:"После готовности — обычный финансовый расход."}
+]});
+
+T.push({id:"ias20",sec:"B. Активы",n:"IAS 20",name:"Госсубсидии",i:"🇺🇿",
+slides:[
+{t:"title",i:"🎁",h:"IAS 20 Government Grants",s:"Государство помогает бизнесу — как это показать честно"},
+{t:"list",h:"Когда признавать",items:["Есть **reasonable assurance**:","1) компания **выполнит условия**","2) деньги **точно придут**","Деньги пришли, но условия точно не выполним → не признаём"]},
+{t:"compare",h:"Куда записывать",l:{h:"❌ Нельзя",items:["Сразу весь доход в 1-й год","Сразу в капитал (государство — не владелец)"]},r:{h:"✅ Надо",items:["В P&L **постепенно**","В тех же периодах, что и расходы (**matching**)"]},
+ en:"Grants are recognised in profit or loss on a systematic basis over the periods in which the related costs are recognised."},
+{t:"compare",h:"Субсидия на актив: 2 способа",l:{h:"A. Deferred income",items:["Станок 1 000 в балансе","Субсидия 200 → обязательство","Каждый год 20 → доход"]},r:{h:"B. Вычесть из cost",items:["Станок 1 000 − 200 = 800","Амортизация 80","Отдельного дохода нет"]},note:"Итог в P&L одинаковый: −80 в год."},
+{t:"calc",h:"Способ A: проводки и баланс",lines:["Получили:","Dr Cash 200 / Cr Deferred income 200","Каждый год:","Dr Deferred income 20 / Cr P&L 20","","Конец года 1:","Deferred income 180","  current 20 (следующий год)","  non-current 160"],
+ joke:"Deferred income — это расход? — Нет! Это как абонемент в зал: деньги взяли, услугу ещё должны."},
+{t:"list",h:"Другие случаи",items:["Субсидия на **зарплату** 2026 → P&L 2026 (доход или минус расход)","Компенсация **прошлых** убытков без условий → **сразу** P&L","**Возврат** субсидии → change in estimate, сразу в P&L","Способ A: сначала из остатка deferred income, остаток → P&L"]}
+],
+qs:[
+{q:"Субсидию признают, когда:",o:["Пришли деньги","Есть разумная уверенность в выполнении условий и получении","Подписан договор","Закончился год"],a:1,e:"Reasonable assurance по обоим пунктам."},
+{q:"Субсидию записывают сразу в капитал?",o:["Да, всегда","Нет — в P&L постепенно (matching)","Да, если сумма большая","Только при способе B"],a:1,e:"Государство не владелец: это доход, растянутый во времени."},
+{q:"Станок 600, срок 6 лет, субсидия 120, способ A. Доход от субсидии за год:",o:["120","20","100","60"],a:1,e:"120 / 6 = 20."},
+{q:"То же. Deferred income на конец 1-го года:",o:["120","100","80","20"],a:1,e:"120 − 20 = 100."},
+{q:"Из этих 100 current liability:",o:["100","80","20","0"],a:2,e:"В доход перейдёт 20 в следующие 12 месяцев."},
+{q:"То же, способ B. Амортизация станка в год:",o:["100","80","120","60"],a:1,e:"(600 − 120) / 6 = 80."},
+{q:"Чистый эффект на P&L при способах A и B:",o:["A больше","B больше","Одинаковый","Зависит от налога"],a:2,e:"A: −100 + 20 = −80. B: −80."},
+{q:"Субсидия компенсирует зарплату новых сотрудников за 2026:",o:["Признаём за 10 лет","В P&L 2026","В капитал","Не признаём"],a:1,e:"Вместе с расходом, который компенсирует."},
+{q:"Субсидия компенсирует ущерб прошлого года, условий нет:",o:["Растягиваем на 5 лет","Сразу в P&L","В OCI","Deferred income"],a:1,e:"Компенсировать в будущем нечего."},
+{q:"Способ A: субсидия 200 на 10 лет, через 4 года нужно вернуть всё. Сколько в P&L?",o:["200","120","80","0"],a:2,e:"Остаток DI 120 погашаем, 200 − 120 = 80 → расход."},
+{q:"Способ B, та же ситуация. Сколько в P&L?",o:["0","80","200","120"],a:1,e:"Недоначисленная амортизация 20 × 4 = 80."},
+{q:"Возврат субсидии учитывается как:",o:["Ошибка прошлых лет","Change in estimate","Изменение политики","Капитал"],a:1,e:"Прошлое не пересчитываем."},
+{q:"Deferred income в балансе — это:",o:["Актив","Обязательство","Расход","Капитал"],a:1,e:"Деньги получены, но ещё не заработаны."},
+{q:"Проводка при получении субсидии (способ A):",o:["Dr Cash / Cr P&L","Dr Cash / Cr Deferred income","Dr Deferred income / Cr Cash","Dr Asset / Cr Equity"],a:1,e:"Актив растёт, обязательство растёт."},
+{q:"Зачем растягивать субсидию?",o:["Чтобы платить меньше налогов","Чтобы доход шёл в паре с расходами, которые он компенсирует","Так проще","Чтобы увеличить капитал"],a:1,e:"Matching: иначе первый год искусственно прибыльный."}
+]});
+
+T.push({id:"ias40",sec:"B. Активы",n:"IAS 40",name:"Инвестиционная недвижимость",i:"🏢",
+slides:[
+{t:"title",i:"🏢",h:"IAS 40 Investment Property",s:"Недвижимость, которая сама приносит деньги"},
+{t:"cards",h:"Один дом — три стандарта",cards:[
+ ["🏭","IAS 16","Работаю в нём сам (офис, завод, общежитие для своих рабочих)"],
+ ["🏢","IAS 40","Сдаю в аренду или жду роста цены"],
+ ["🏗","IAS 2","Продаю как товар (застройщик)"]],
+ joke:"А земля, которую я купил и сам не знаю зачем? — IAS 40, Бахтиёр-ака."},
+{t:"list",h:"Сложные случаи",items:["Земля без определённой цели → **IAS 40**","Отель, которым управляем сами (услуги) → **IAS 16**","Строящееся здание под аренду → **IAS 40**","Смешанное: части можно продать отдельно → **делим**","Нельзя разделить → IAS 40, только если своя часть **незначительна**"]},
+{t:"compare",h:"Две модели (на всю IP)",l:{h:"Fair value model",items:["Оценка по рынку каждый год","**Без амортизации**","Изменение → **P&L**"]},r:{h:"Cost model",items:["Как IAS 16","Cost − амортизация","FV раскрываем в примечаниях"]}},
+{t:"calc",h:"Главная ловушка: IAS 16 vs IAS 40",lines:["Здание 4 000 + юристы 100 = 4 100","Через год рынок = 4 500","","IAS 40 (сдаём):","  амортизация 0","  рост 400 → P&L (+400)","","IAS 16 (работаем сами), 50 лет:","  амортизация 82 → P&L (−82)","  CA 4 018, рост 482 → OCI"]},
+{t:"list",h:"Почему в FV model нет амортизации",items:["Каждый год ставим по рыночной цене — она уже включает износ","Если начислить амортизацию, переоценка всё равно доберёт разницу","Всё и так идёт в P&L → разделять бессмысленно","В IAS 16 иначе: износ → P&L, переоценка → OCI, разные места"],
+ en:"Under the fair value model, investment property is not depreciated; fair value changes go to profit or loss."},
+{t:"flow",h:"Переводы (transfers)",steps:["PPE → IP (FV): сначала переоценка по IAS 16, рост → **OCI**","IP (FV) → PPE: FV на дату = новый **cost**, дальше амортизация","Inventory → IP (FV): разница → **P&L**"]}
+],
+qs:[
+{q:"Земля куплена, решение об использовании не принято:",o:["IAS 16","IAS 40","IAS 2","IAS 38"],a:1,e:"Земля без определённой цели — инвестиционная недвижимость."},
+{q:"Офис, в котором работают сотрудники Artel:",o:["IAS 40","IAS 16","IAS 2","IFRS 16"],a:1,e:"Собственное использование."},
+{q:"Застройщик строит квартиры на продажу:",o:["IAS 40","IAS 16","IAS 2","IAS 41"],a:2,e:"Для застройщика это товар."},
+{q:"Бывший офис Artel сдан банку на 10 лет:",o:["IAS 16","IAS 40","IAS 2","IAS 37"],a:1,e:"Доход от аренды."},
+{q:"Общежитие для рабочих Artel:",o:["IAS 40","IAS 16","IAS 2","Не актив"],a:1,e:"Считается собственным использованием."},
+{q:"Отель, которым компания управляет сама (уборка, ресторан):",o:["IAS 40","IAS 16","IAS 2","IFRS 15 актив"],a:1,e:"Продаются услуги, здание — инструмент."},
+{q:"Амортизация при fair value model:",o:["Как в IAS 16","Не начисляется","Только на здание","Удвоенная"],a:1,e:"Стоимость определяется рынком каждый год."},
+{q:"Рост fair value при fair value model идёт в:",o:["OCI","P&L","Retained earnings напрямую","Не признаётся"],a:1,e:"Рост цены — цель бизнеса."},
+{q:"Здание 4 000 + юристы 100, через год FV 4 500 (IAS 40, FV model). Результат:",o:["+500 OCI","+400 P&L","+500 P&L","+418 P&L"],a:1,e:"Cost 4 100 → 4 500: +400 в P&L."},
+{q:"То же здание по IAS 16 revaluation, 50 лет. Рост в OCI:",o:["400","500","482","418"],a:2,e:"Амортизация 82 → CA 4 018 → 4 500 − 4 018 = 482."},
+{q:"Здание: 1 этаж Artel занимает сам, 4 сдаёт. Этажи можно сдавать отдельно:",o:["Всё IAS 40","Всё IAS 16","Делим: 1 этаж IAS 16, 4 этажа IAS 40","IAS 2"],a:2,e:"Отделимые части учитываются раздельно."},
+{q:"Выбор модели (FV или cost) применяется:",o:["К каждому зданию отдельно","Ко всей инвестиционной недвижимости","Только к земле","Раз в 5 лет"],a:1,e:"Одна модель для всей IP."},
+{q:"Artel переехал и начал сдавать бывший офис (FV model). Рост стоимости на дату перевода:",o:["P&L","OCI (по IAS 16)","Не признаётся","Retained earnings"],a:1,e:"Сначала применяем IAS 16 до даты перевода."},
+{q:"IP по FV переводится в PPE. Новый cost:",o:["Исходная цена покупки","FV на дату перевода","Ноль","CA по cost model"],a:1,e:"FV на дату = deemed cost."},
+{q:"Fair value model: FV упал с 3 000 до 2 700:",o:["Убыток 300 в OCI","Убыток 300 в P&L","Не признаём","Амортизация 300"],a:1,e:"Все изменения FV — в P&L."}
+]});
+
+T.push({id:"ias38",sec:"B. Активы",n:"IAS 38",name:"Нематериальные активы",i:"💡",
+slides:[
+{t:"title",i:"💡",h:"IAS 38 Intangible Assets",s:"Патенты, лицензии, софт, разработки — стоят денег, но их не потрогать"},
+{t:"cards",h:"3 условия определения",cards:[
+ ["✂️","Identifiable","Можно отделить и продать, или возникает из договора/закона"],
+ ["🔒","Control","Можем получать выгоду и не пускать других"],
+ ["💰","Future benefits","Приносит деньги или экономию"]],
+ joke:"Знания моих инженеров — актив? — Нет: инженер может уйти к конкуренту."},
+{t:"compare",h:"Купленные vs созданные внутри",l:{h:"🛒 Купили",items:["Лицензия, патент, бренд","Есть цена сделки","→ **актив по cost**"]},r:{h:"🏭 Создали сами",items:["Свой бренд, логотип, клиенты","Внутренний гудвил","→ **всегда расход**"]}},
+{t:"flow",h:"Research → Development",steps:["**Research** (поиск знаний) → всегда **расход**","**Development** (прототип, тесты) → проверяем PIRATE","Все 6 условий выполнены → **актив** с этой даты","Ранее списанное в расходы **назад не возвращаем**"]},
+{t:"cards",h:"PIRATE — 6 условий",cards:[["P","Probable","Вероятная выгода, есть рынок"],["I","Intention","Намерены закончить"],["R","Resources","Есть деньги и люди"],["A","Ability","Сможем использовать/продать"],["T","Technical","Технически осуществимо"],["E","Expenditure","Затраты надёжно считаются"]]},
+{t:"calc",h:"Пример: Smart Fridge",lines:["Янв–мар: research 200 → расход","Апр–июн: прототип не работает 180 → расход","1 июля: все PIRATE ✅","Июл–дек: инженеры 240, материалы 90,","  патент 20 → актив 350","  админ 30, обучение 25, реклама 60 → расход","Амортизация — с даты готовности к продаже"]},
+{t:"compare",h:"Срок полезного использования",l:{h:"Конечный",items:["Лицензия на 8 лет","→ амортизируем"]},r:{h:"Неопределённый",items:["Торговая марка без предела","→ без амортизации","→ тест IAS 36 каждый год"]},note:"Переоценка разрешена только при активном рынке (почти никогда для брендов и патентов)."}
+],
+qs:[
+{q:"Затраты на исследования (research):",o:["Актив","Всегда расход","Актив, если успешны","Резерв"],a:1,e:"Результат неизвестен — только расход."},
+{q:"Буква T в PIRATE:",o:["Time","Technical feasibility","Tax","Turnover"],a:1,e:"Техническая осуществимость: прототип работает."},
+{q:"Собственный бренд Artel, созданный рекламой:",o:["Актив по cost рекламы","Никогда не признаётся","Актив по FV","Актив, если известен"],a:1,e:"Нельзя отделить затраты на бренд от обычных затрат."},
+{q:"Купленный у конкурента бренд за 600:",o:["Расход","Актив 600","Гудвил","Не признаётся"],a:1,e:"Есть цена сделки → надёжная оценка."},
+{q:"Патент куплен за 200 на 10 лет. Амортизация в год:",o:["200","20","0","10"],a:1,e:"200 / 10."},
+{q:"Затраты апреля списаны в расход (не было T). В июле условия выполнены. Апрельские затраты:",o:["Переносим в актив","Остаются в расходах","В OCI","В резерв"],a:1,e:"Реинстейтмент запрещён."},
+{q:"Research 80, разработка до T 60, разработка после всех PIRATE 240. Капитализируем:",o:["380","300","240","0"],a:2,e:"Только после выполнения всех условий."},
+{q:"Амортизация development costs начинается:",o:["Сразу после капитализации","Когда продукт готов к использованию/продаже","В конце года","После патента"],a:1,e:"Available for use."},
+{q:"Нематериальный актив с неопределённым сроком:",o:["Амортизация 20 лет","Без амортизации, тест на обесценение каждый год","Сразу в расходы","Амортизация 50%"],a:1,e:"IAS 36 обязательный ежегодный тест."},
+{q:"Revaluation model для нематериальных активов разрешена, если:",o:["Всегда","Есть активный рынок","Директор решил","Актив дорогой"],a:1,e:"Для брендов и патентов активного рынка нет."},
+{q:"Обучение персонала новой технологии:",o:["Актив","Расход","Часть лицензии","Резерв"],a:1,e:"Нет контроля над знаниями сотрудников."},
+{q:"Почему сотрудники не нематериальный актив?",o:["Слишком дорогие","Компания их не контролирует","Нет выгоды","Не identifiable по закону"],a:1,e:"Могут уволиться в любой момент."},
+{q:"Админ. расходы, распределённые на проект разработки:",o:["Актив","Расход","50/50","Гудвил"],a:1,e:"Общие расходы не создают продукт."},
+{q:"Development 385, продажи с 1 марта, срок 4 года, год до 31 декабря. Амортизация за год:",o:["96.25","80.21","64.17","0"],a:1,e:"385 / 4 = 96.25 × 10/12 ≈ 80.21."},
+{q:"Что точно identifiable?",o:["Внутренний гудвил","Купленная лицензия по договору","Лояльность клиентов","Команда менеджеров"],a:1,e:"Возникает из договора и может быть отделена."}
+]});
+
+/* ===== PART 2 ===== */
+T.push({id:"ias36",sec:"B. Активы",n:"IAS 36",name:"Обесценение активов",i:"💥",
+slides:[
+{t:"title",i:"💥",h:"IAS 36 Impairment of Assets",s:"Актив не может стоить в балансе больше, чем с него можно вернуть"},
+{t:"formula",h:"Главная формула",f:"Loss = CA − RA\nRA = max(FVLCD, VIU)",parts:[["CA","Carrying amount — стоимость в балансе"],["FVLCD","Продать сейчас минус расходы на продажу"],["VIU","Использовать дальше: будущие чистые деньги + продажа в конце, дисконтированные"],["RA","Лучший из двух путей"]],
+ joke:"Почему большее? — Умный бизнесмен выбирает лучший вариант. Как я с фермой."},
+{t:"compare",h:"Когда проверять",l:{h:"Каждый год обязательно",items:["Гудвил","Нематериальные с неопределённым сроком","Нематериальные, ещё не готовые к использованию"]},r:{h:"Только при признаках",items:["Рыночная цена упала","Новый конкурент / технология","Повреждение, устаревание","Результаты хуже плана","Ставки выросли"]}},
+{t:"calc",h:"Как считается VIU",lines:["Чистые деньги × discount factor 10%:","Год 1: 60 × 0.909 = 54.5","Год 2: 52 × 0.826 = 43.0","Год 3: 42 × 0.751 = 31.5","Год 3.5: 15 × 0.716 = 10.7","VIU ≈ 140"],note:"Без процентов по кредитам и налогов; без будущих улучшений."},
+{t:"flow",h:"Шаблон 5 шагов",steps:["Что в актив, что в расход?","Амортизация: с какой даты, сколько?","CA на дату теста","RA = max(FVLCD, VIU); CA > RA → убыток в P&L","Новая амортизация = новый CA / **оставшийся** срок"]},
+{t:"trap",h:"Ловушки",items:["VIU < CA, но FVLCD > CA → **обесценения нет**","Cost model: RA > CA → **не повышаем** стоимость","Переоценённый актив: сначала **резерв**, остаток в P&L","После обесценения амортизация **меняется** (меньше база)"]},
+{t:"flow",h:"CGU и гудвил",steps:["Если актив не генерирует деньги сам → тестируем **CGU** (группу)","Убыток CGU сначала списывает **гудвил**","Остаток — пропорционально на другие активы","Актив не ниже своего FVLCD / VIU / нуля"],
+ en:"Impairment losses of a CGU are allocated first to goodwill, then pro rata to other assets."},
+{t:"compare",h:"Восстановление (reversal)",l:{h:"Можно",items:["Обычные активы","Не выше CA, какой был бы без обесценения","Через P&L (или резерв, если переоценка)"]},r:{h:"Нельзя",items:["**Гудвил** — никогда"]}}
+],
+qs:[
+{q:"Recoverable amount — это:",o:["Меньшее из FVLCD и VIU","Большее из FVLCD и VIU","Всегда VIU","CA − амортизация"],a:1,e:"Лучший из двух путей: продать или использовать."},
+{q:"CA 800, продать за 650 с расходами 30, VIU 700. Убыток:",o:["180","150","100","0"],a:2,e:"FVLCD 620, RA = 700, 800 − 700 = 100."},
+{q:"CA 300, FVLCD 320, VIU 280. Обесценение:",o:["20","40","Нет","300"],a:2,e:"RA = 320 > CA."},
+{q:"Переоценённое здание: CA 900, резерв 60, RA 780. Учёт убытка 120:",o:["120 в P&L","60 OCI (резерв), 60 P&L","120 OCI","60 P&L, 60 капитал"],a:1,e:"Сначала резерв, остаток в P&L."},
+{q:"Что тестируют каждый год обязательно?",o:["Грузовики","Гудвил","Запасы","Дебиторку"],a:1,e:"Плюс неопределённый срок и разработки в процессе."},
+{q:"Внешний признак обесценения:",o:["Плановая амортизация","Конкурент выпустил лучшую технологию","Покупка нового станка","Рост выручки"],a:1,e:"Изменение рынка/технологий."},
+{q:"После обесценения CA лицензии 300, осталось 6 лет. Новая амортизация:",o:["60","50","37.5","0"],a:1,e:"300 / 6 = 50."},
+{q:"Value in use включает:",o:["Только выручку следующего года","Будущие чистые деньги + продажу в конце, дисконтированные","Рыночную цену","Проценты по кредиту"],a:1,e:"…and from its ultimate disposal."},
+{q:"60 через год при ставке 10% сегодня стоят:",o:["66","60","54.5","50"],a:2,e:"60 / 1.10 ≈ 54.5."},
+{q:"Бренд: CA 600, FVLCD 630, VIU 580. Обесценение:",o:["20","Нет","50","30"],a:1,e:"RA = 630 > 600. Ловушка: смотреть только на VIU."},
+{q:"Убыток CGU сначала распределяется на:",o:["Здания","Гудвил","Запасы","Пропорционально всем"],a:1,e:"Сначала гудвил, потом пропорционально."},
+{q:"Восстановление обесценения гудвила:",o:["Разрешено полностью","Никогда","Через OCI","Только 50%"],a:1,e:"Goodwill impairment is never reversed."},
+{q:"CGU: гудвил 50, здание 300, станки 200. RA 450. Убыток станков:",o:["40","20","0","100"],a:1,e:"Убыток 100: 50 гудвил, 50 пропорционально 300:200 → станки 20."},
+{q:"Разработку «в процессе» тестируют ежегодно, потому что:",o:["Она дорогая","Ещё не готова к использованию и не амортизируется","Так хочет аудитор","Есть гудвил"],a:1,e:"Риск зависания стоимости выше реальной."},
+{q:"Убыток от обесценения актива по cost model:",o:["OCI","P&L","Retained earnings","Не признаётся"],a:1,e:"Резерва нет — сразу в P&L."}
+]});
+
+T.push({id:"ifrs5",sec:"B. Активы",n:"IFRS 5",name:"Активы для продажи",i:"🏷",
+slides:[
+{t:"title",i:"🏷",h:"IFRS 5 Held for Sale & Discontinued Operations",s:"Когда актив или целый бизнес решили продать"},
+{t:"list",h:"Критерии held for sale (все!)",items:["Доступен для **немедленной продажи** в текущем состоянии","Руководство **утвердило план**","Начали **искать покупателя**","Цена **разумная** (не сильно выше рынка)","Продажа ожидается **в течение 12 месяцев**"]},
+{t:"formula",h:"Оценка",f:"min(CA, FV − costs to sell)",parts:[["Ниже CA","Убыток сразу в P&L"],["Выше CA","Прибыль только при продаже"],["Амортизация","СТОП"],["Баланс","Отдельная строка в current assets"]],
+ joke:"Продали два раза? — Нет! 1 октября оценка 760, а в феврале реальная продажа 770."},
+{t:"calc",h:"Пример: склад",lines:["Cost 1 000 (2017), 50 лет → 20/год","1.10.2026 — критерии выполнены","Dep до 1.10: 180 + 15 → CA 805","FV 760 − costs 15 = 745","min(805, 745) = 745 → убыток 60","Окт–дек: амортизации нет","Продали за 770 − 15 = 755 → прибыль 10"]},
+{t:"compare",h:"Не held for sale",l:{h:"Ситуации",items:["Будем **сносить**","Нужен капремонт до продажи","Продажа через 2 года","Цена на 50% выше рынка"]},r:{h:"Почему",items:["Это не продажа","Не «в текущем состоянии»","Больше 12 месяцев","Продажа маловероятна"]}},
+{t:"list",h:"Discontinued operation",items:["Продано или held for sale, **и** это:","отдельное **крупное направление** бизнеса (все телефоны)","или крупный **географический регион** (весь Казахстан)","или дочка, купленная только для перепродажи","3 магазина из 150 → **не** discontinued"]},
+{t:"calc",h:"Как показать в P&L",lines:["Продолжающаяся деятельность:","  Прибыль после налога      560","Прекращённая деятельность:","  Убыток (одной строкой)    (80)","Прибыль за год              480","","Прошлый год тоже пересчитываем!"],en:"The aim: help users predict future results (relevance — predictive value)."}
+],
+qs:[
+{q:"Held for sale оценивается по:",o:["Большему из CA и FVLCS","Меньшему из CA и FVLCS","Fair value","Cost"],a:1,e:"Lower of carrying amount and FV less costs to sell."},
+{q:"Амортизация после классификации held for sale:",o:["Продолжается","Прекращается","Удваивается","Только для зданий"],a:1,e:"Актив больше не используется."},
+{q:"Продажа должна ожидаться в течение:",o:["6 месяцев","12 месяцев","24 месяцев","Любого срока"],a:1,e:"Как правило, 12 месяцев."},
+{q:"Цех собираются снести:",o:["Held for sale","Не held for sale","Discontinued","Запасы"],a:1,e:"Abandoned — это не продажа."},
+{q:"Здание выставлено по цене на 50% выше рынка:",o:["Held for sale","Не held for sale","IAS 40","IAS 2"],a:1,e:"Продажа не highly probable."},
+{q:"Станок 600, 10 лет с 1.01.2022; критерии 1.07.2026; FV 300, costs 20. Убыток:",o:["20","50","80","0"],a:1,e:"CA 330, FVLCS 280 → 50."},
+{q:"Тот же станок. Амортизация за 2026:",o:["60","30","0","45"],a:1,e:"Только 6 месяцев до классификации."},
+{q:"Где в балансе held for sale?",o:["Non-current assets","Отдельно в current assets","В капитале","Не показываем"],a:1,e:"Деньги ожидаются в течение 12 месяцев."},
+{q:"Held for sale 745, продали: чистая выручка 755. Результат:",o:["Убыток 10","Прибыль 10","Прибыль 755","0"],a:1,e:"755 − 745."},
+{q:"Discontinued operation — это:",o:["Любой проданный актив","Отдельное крупное направление или регион","Закрытый магазин","Списанный запас"],a:1,e:"Нужен масштаб направления/региона."},
+{q:"Artel закрывает 3 магазина из 150:",o:["Discontinued","Не discontinued","Held for sale","IAS 37"],a:1,e:"Не крупное направление."},
+{q:"Результат discontinued operation в P&L показывают:",o:["Построчно с остальным","Одной суммой после налога","Только в примечаниях","В OCI"],a:1,e:"Single amount, детали в примечаниях."},
+{q:"Сравнительные данные прошлого года:",o:["Не меняются","Пересчитываются (re-presented)","Удаляются","Только в OCI"],a:1,e:"Иначе нельзя сравнить годы."},
+{q:"Зачем отделять прекращённую деятельность?",o:["Уменьшить налоги","Помочь прогнозировать будущие результаты","Скрыть убытки","Так короче"],a:1,e:"Predictive value: что продолжится, а что уходит."},
+{q:"Позже FVLCS held for sale выросла. Прибыль признаётся:",o:["Без ограничений","Не выше ранее признанных убытков обесценения","Никогда","В OCI"],a:1,e:"Можно отменить только прежние убытки."}
+]});
+
+T.push({id:"ias2",sec:"B. Активы",n:"IAS 2",name:"Запасы",i:"📦",
+slides:[
+{t:"title",i:"📦",h:"IAS 2 Inventories",s:"Холодильники на складе, металл, незавершёнка"},
+{t:"cards",h:"Три вида запасов",cards:[["🧊","Готовая продукция","Холодильники на складе"],["🔧","WIP","Собран наполовину"],["🧱","Сырьё","Металл, пластик, компрессоры"]]},
+{t:"formula",h:"Главное правило",f:"Запасы = min(Cost, NRV)",parts:[["NRV","Цена продажи − доработка − расходы на продажу"],["Сравнение","По каждой позиции или группе похожих"]],en:"Inventories are measured at the lower of cost and net realisable value."},
+{t:"compare",h:"Что в cost",l:{h:"✅ Входит",items:["Материалы, пошлины, доставка","Зарплата рабочих конвейера","Производственные накладные (электричество цеха, амортизация станков)"]},r:{h:"❌ Не входит",items:["Ненормальные потери","Хранение готовой продукции","Админ. расходы","Расходы на продажу","Возмещаемый НДС"]}},
+{t:"calc",h:"Ловушка: normal capacity",lines:["Постоянные накладные цеха 1 200","Норма 10 000 шт. → 0.12 на шт.","Произвели 8 000:","  в запасы 8 000 × 0.12 = 960","  в расходы 1 200 − 960 = 240","Произвели 12 000 (сверх нормы):","  1 200 / 12 000 = 0.10 (по факту)"],
+ joke:"Почему не делить на 8 000? — Простой завода не делает холодильник ценнее!"},
+{t:"compare",h:"Формулы себестоимости",l:{h:"✅ Разрешено",items:["FIFO","Weighted average","Specific identification (уникальные)"]},r:{h:"❌ Запрещено",items:["**LIFO** — склад по устаревшим ценам"]}},
+{t:"calc",h:"NRV: старые холодильники",lines:["100 шт., cost 3.0 за шт.","Цена 2.8 − ручки 0.1 − комиссия 0.2","NRV = 2.5","Списание (3.0 − 2.5) × 100 = 50 → P&L","В балансе 250"]}
+],
+qs:[
+{q:"Запасы оцениваются по:",o:["Cost","NRV","Меньшему из cost и NRV","Большему из cost и NRV"],a:2,e:"Lower of cost and NRV."},
+{q:"Что входит в cost холодильника?",o:["Реклама по ТВ","Электричество цеха","Зарплата главбуха","Доставка покупателю"],a:1,e:"Производственные накладные."},
+{q:"Что НЕ входит в cost?",o:["Зарплата рабочих конвейера","Пошлина на металл","Расходы на продажу","Амортизация станков цеха"],a:2,e:"Продажа — расход периода."},
+{q:"Постоянные накладные 600, норма 5 000, произвели 4 000. В запасы:",o:["600","480","400","120"],a:1,e:"0.12 × 4 000 = 480."},
+{q:"То же. В расходы P&L:",o:["0","120","480","600"],a:1,e:"Нераспределённые 600 − 480."},
+{q:"Накладные 1 200, норма 10 000, произвели 12 000. На штуку:",o:["0.12","0.10","0.15","0.20"],a:1,e:"Сверх нормы — по факту, чтобы не завысить запасы."},
+{q:"Цена 60, доработка 8, комиссия 5. NRV:",o:["60","52","47","55"],a:2,e:"60 − 8 − 5."},
+{q:"Cost 50, NRV 47. Запасы в балансе:",o:["50","47","3","97"],a:1,e:"Меньшее; списание 3 в P&L."},
+{q:"LIFO по IFRS:",o:["Разрешён","Запрещён","Только для сырья","Только при инфляции"],a:1,e:"Склад отражался бы по устаревшим ценам."},
+{q:"Купили 100 по 10 и 100 по 12, продали 120. Остаток по FIFO:",o:["880","960","800","1 000"],a:1,e:"Остались 80 по 12."},
+{q:"То же по weighted average:",o:["960","880","800","900"],a:1,e:"Средняя 11 × 80."},
+{q:"Испорченная партия металла (ненормальные потери):",o:["В cost запасов","Расход P&L","В OCI","Резерв"],a:1,e:"Abnormal waste — не часть нормальной себестоимости."},
+{q:"Хранение готовой продукции на складе (не часть производства):",o:["В cost","Расход","50/50","Актив"],a:1,e:"Не нужно для производства."},
+{q:"Сравнение cost и NRV делают:",o:["По всему складу сразу","По каждой позиции (или группе похожих)","Раз в 5 лет","Только для дорогих"],a:1,e:"Иначе убыток спрячется за прибыльными товарами."},
+{q:"Возмещаемый НДС при покупке материалов:",o:["Входит в cost","Не входит","50%","Только импорт"],a:1,e:"Его зачтут."}
+]});
+
+T.push({id:"ias41",sec:"B. Активы",n:"IAS 41",name:"Сельское хозяйство",i:"🐄",
+slides:[
+{t:"title",i:"🐄",h:"IAS 41 Agriculture",s:"Коровы, хлопок, яблоки: живые активы"},
+{t:"cards",h:"4 категории",cards:[["🐄","Biological asset","Живое: корова, хлопок на поле → IAS 41"],["🥛","Agricultural produce","Собранное: молоко, хлопок → IAS 41 в момент сбора"],["🧀","После переработки","Сыр, пряжа → IAS 2"],["🌳","Bearer plants","Яблоня, лоза → IAS 16"]],
+ joke:"Яблоня — IAS 16, а яблоки на ней — IAS 41? — Да! Яблоня как станок, яблоки как продукция."},
+{t:"flow",h:"Путь молока",steps:["🐄 Корова → IAS 41 (FVLCS каждый год)","🥛 Молоко при сборе → IAS 41 (FVLCS)","Это значение = **cost** для IAS 2","🧀 Сыр → IAS 2"]},
+{t:"formula",h:"Главное правило",f:"Biological asset = FV − costs to sell",parts:[["Когда","При признании и на каждую отчётную дату"],["Изменения","→ P&L"],["Амортизация","НЕТ"],["Исключение","FV нельзя оценить при признании → cost − амортизация"]]},
+{t:"calc",h:"Ферма Бахтиёр-аки",lines:["Купили 10 тёлок по 15 = 150","FVLCS = (15 − 0.3) × 10 = 147 → убыток 3","Родились 4 телёнка × 3 = 12 → доход","Молоко при сборе 30 → доход, далее IAS 2","Конец года: коровы (20 − 0.4) × 10 = 196 (+49)","Телята 4 × 5 = 20 (+8)","Итого в P&L: −3 + 12 + 30 + 57 = 96"]},
+{t:"compare",h:"Субсидии: IAS 41 ≠ IAS 20",l:{h:"IAS 41 (по FVLCS)",items:["Безусловная → P&L, когда к получению","Условная → когда условие выполнено"]},r:{h:"IAS 20",items:["Растягиваем через deferred income"]}}
+],
+qs:[
+{q:"Хлопок, растущий на поле:",o:["IAS 2","IAS 41","IAS 16","IAS 38"],a:1,e:"Биологический актив."},
+{q:"Собранный хлопок в момент сбора:",o:["IAS 16","IAS 41, далее IAS 2","IAS 40","IFRS 15"],a:1,e:"Agricultural produce at the point of harvest."},
+{q:"Хлопковая пряжа на складе:",o:["IAS 41","IAS 2","IAS 16","IAS 38"],a:1,e:"Продукт переработки."},
+{q:"Абрикосовое дерево в саду:",o:["IAS 41","IAS 16","IAS 2","IAS 40"],a:1,e:"Bearer plant."},
+{q:"Абрикосы, висящие на дереве:",o:["IAS 16","IAS 41","IAS 2","Не учитываются"],a:1,e:"Растущая продукция — биологический актив."},
+{q:"Биологические активы оцениваются по:",o:["Cost","FV − costs to sell","Min(cost, NRV)","VIU"],a:1,e:"На каждую отчётную дату."},
+{q:"Изменение FVLCS биологических активов:",o:["OCI","P&L","Капитал","Не признаётся"],a:1,e:"Рост стада — заработок фермы."},
+{q:"Амортизация коров:",o:["10 лет","Не начисляется","По пробегу","50%"],a:1,e:"Оценка по рынку каждый год."},
+{q:"20 овец по 2.0, costs to sell 0.1. В балансе при покупке:",o:["40","38","42","2"],a:1,e:"20 × 1.9 = 38; убыток 2 в P&L."},
+{q:"Конец года: FV 2.5, costs 0.1. Рост по 20 овцам (было 38):",o:["12","10","8","0"],a:1,e:"20 × 2.4 = 48 → +10 в P&L."},
+{q:"Родился телёнок, FV 3, costs 0:",o:["Нет учёта","Доход 3 в P&L","OCI 3","Капитал"],a:1,e:"Gain on initial recognition."},
+{q:"Молоко при сборе оценивается по FVLCS, и это:",o:["Выручка","Cost для IAS 2","Резерв","Капитал"],a:1,e:"Дальше молоко — обычный запас."},
+{q:"Безусловная субсидия на стадо (учёт по FVLCS):",o:["Deferred income","P&L, когда к получению","Капитал","Не признаётся"],a:1,e:"Отличие от IAS 20."},
+{q:"Условная субсидия («не продавать стадо 3 года»):",o:["Сразу в P&L","Когда условие выполнено","Deferred income","Никогда"],a:1,e:"Признаём после выполнения условия."},
+{q:"FV невозможно надёжно определить при признании:",o:["Не признаём","Cost − амортизация − обесценение","Ноль","Произвольная оценка"],a:1,e:"Редкое исключение."}
+]});
+
+T.push({id:"ifrs15",sec:"B. Выручка и обязательства",n:"IFRS 15",name:"Выручка",i:"💵",
+slides:[
+{t:"title",i:"💵",h:"IFRS 15 Revenue from Contracts",s:"Главный шаблон: 5 шагов"},
+{t:"flow",h:"5 шагов IFRS 15",steps:["Найти **договор** с клиентом","Найти **обязанности к исполнению** (POs)","Определить **цену сделки**","**Распределить** цену по POs (по отдельным ценам SSP)","Признать выручку, когда/по мере выполнения PO"],
+ joke:"5 шагов? Как плов: морковь, лук, мясо, рис… и терпение!"},
+{t:"calc",h:"Распределение цены",lines:["Холодильник + сервис 2 года = 1 000","SSP: холодильник 900, сервис 300 (итого 1 200)","Холодильник: 1 000 × 900/1 200 = 750","Сервис:      1 000 × 300/1 200 = 250","750 → сразу при передаче","250 → равномерно 2 года"]},
+{t:"compare",h:"Когда признавать",l:{h:"В момент (point in time)",items:["Продажа товара","Передан контроль: право собственности, владение, риски, приёмка"]},r:{h:"Со временем (over time)",items:["Сервис, подписка","Стройка по договору","Метод: доля выполненных работ"]}},
+{t:"calc",h:"Договор со временем",lines:["Цена 10 000, всего затрат 8 000","Затрачено 3 000 → 37.5%","Выручка = 3 750","Себестоимость = 3 000","Прибыль = 750","Ожидаемый убыток → сразу весь"]},
+{t:"trap",h:"Ловушки",items:["**Агент**: выручка = только комиссия","Переменное вознаграждение: только если нет риска значительной отмены","Оплата вперёд → **contract liability**","Отсрочка 2 года → выручка по PV, остальное — проценты","Право возврата: ожидаемые возвраты → refund liability","Стандартная гарантия → IAS 37, не отдельная PO"]}
+],
+qs:[
+{q:"Правильный порядок шагов IFRS 15:",o:["Цена → договор → POs → признание → распределение","Договор → POs → цена → распределение → признание","POs → договор → цена → признание → распределение","Договор → цена → признание → POs → распределение"],a:1,e:"Contract, obligations, price, allocate, recognise."},
+{q:"Холодильник + сервис за 1 000. SSP: 900 и 300. Выручка за холодильник:",o:["900","750","1 000","675"],a:1,e:"1 000 × 900 / 1 200."},
+{q:"Выручка от сервисного обслуживания на 2 года:",o:["Сразу","Со временем (over time)","В конце 2 лет","Никогда"],a:1,e:"Клиент получает выгоду постепенно."},
+{q:"Выручка от продажи холодильника признаётся:",o:["При подписании договора","Когда контроль перешёл к клиенту","При оплате","В конце года"],a:1,e:"Point in time."},
+{q:"Признак перехода контроля:",o:["Клиент получил товар и право собственности","Подписан счёт","Товар произведён","Оплачен аванс"],a:0,e:"Владение, право собственности, риски и выгоды, приёмка."},
+{q:"Artel продаёт товар поставщика как агент, комиссия 10% от 500. Выручка Artel:",o:["500","450","50","0"],a:2,e:"Агент признаёт только комиссию."},
+{q:"Переменное вознаграждение (бонус) включается, если:",o:["Всегда","Высоко вероятно, что не будет значительной отмены","Никогда","По решению директора"],a:1,e:"Ограничение variable consideration."},
+{q:"Оплата через 2 года (значительное финансирование). Выручка:",o:["Полная сумма сразу","По приведённой стоимости, остальное — проценты","Через 2 года","Не признаётся"],a:1,e:"Significant financing component."},
+{q:"1 октября получено 1 200 за сервис на 12 месяцев, год до 31 декабря. Выручка:",o:["1 200","300","900","0"],a:1,e:"3 месяца; 900 — contract liability."},
+{q:"Contract liability — это:",o:["Долг клиента","Оплата получена до выполнения","Резерв по гарантии","Кредит"],a:1,e:"Мы должны оказать услугу."},
+{q:"Цена 10 000, затраты 3 000 из 8 000. Выручка (по затратам):",o:["3 000","3 750","10 000","5 000"],a:1,e:"37.5% × 10 000."},
+{q:"То же. Прибыль за год:",o:["750","3 750","2 000","0"],a:0,e:"3 750 − 3 000."},
+{q:"По договору ожидается общий убыток:",o:["Признаём постепенно","Признаём весь сразу","Не признаём","В OCI"],a:1,e:"Onerous — сразу."},
+{q:"Продажа с правом возврата, ожидаемые возвраты:",o:["Выручка","Refund liability, не выручка","Расход","Капитал"],a:1,e:"Выручка только за то, что не вернут."},
+{q:"Стандартная гарантия качества (assurance-type):",o:["Отдельная PO","Резерв по IAS 37","Выручка","Капитал"],a:1,e:"Отдельная PO — только если продаётся как доп. услуга."}
+]});
+
+T.push({id:"ifrs16",sec:"B. Выручка и обязательства",n:"IFRS 16",name:"Аренда",i:"🔑",
+slides:[
+{t:"title",i:"🔑",h:"IFRS 16 Leases",s:"Арендатор показывает в балансе и актив, и долг"},
+{t:"compare",h:"Было → стало",l:{h:"IAS 17 (старый)",items:["Операционная аренда — только расход","Долги «спрятаны»"]},r:{h:"IFRS 16",items:["Right-of-use asset","Lease liability","Почти вся аренда в балансе"]},
+ joke:"Склад в аренде, а в балансе долг 360? — Да, Бахтиёр-ака, банк теперь всё видит."},
+{t:"formula",h:"Первоначальная оценка",f:"Liability = PV будущих платежей\nROU = Liability + прямые затраты\n+ платежи до начала + демонтаж\n− стимулы арендодателя",parts:[["Ставка","Ставка аренды или ставка привлечения"],["ROU","Амортизация: срок аренды (или жизнь актива, если перейдёт право собственности)"]]},
+{t:"calc",h:"Платежи в конце года",lines:["Liability 1 000, ставка 10%, платёж 300","Начало     1 000","Проценты  + 100  (P&L)","Платёж    − 300","Конец        800","ROU 1 000 / 5 лет = 200 амортизация"]},
+{t:"calc",h:"Платежи в начале года",lines:["PV всех платежей 1 000, первый 250 в день 1","После платежа    750","Проценты 10%   +  75","Конец года       825"]},
+{t:"list",h:"Исключения (можно не в баланс)",items:["**Краткосрочная** аренда ≤ 12 месяцев","Аренда **малоценных** активов (ноутбук, планшет)","→ расход равномерно в P&L"]},
+{t:"trap",h:"Ловушки",items:["Current liability = основной долг, гасимый в след. 12 мес.","Стимул от арендодателя **уменьшает** ROU","Платежи вперёд: первый платёж не входит в liability","Sale & leaseback: прибыль только за переданные права"]}
+],
+qs:[
+{q:"Арендатор по IFRS 16 признаёт:",o:["Только расход","ROU-актив и обязательство","Только актив","Только примечание"],a:1,e:"Единая модель для арендатора."},
+{q:"Обязательство по аренде оценивается по:",o:["Сумме всех платежей","PV неоплаченных платежей","Fair value здания","Годовому платежу"],a:1,e:"Дисконтированная стоимость."},
+{q:"В ROU-актив входят:",o:["Первоначальные прямые затраты","Будущие ремонты","Реклама","Проценты будущих лет"],a:0,e:"Initial direct costs."},
+{q:"Можно не признавать в балансе аренду:",o:["На 3 года","≤ 12 месяцев","Любую офисную","Здания"],a:1,e:"Short-term exemption."},
+{q:"Пример малоценного актива:",o:["Здание","Ноутбук","Грузовик","Станок"],a:1,e:"Low-value: планшеты, ноутбуки, мелкая мебель."},
+{q:"Liability 1 000, 10%, платёж 300 в конце года. Остаток:",o:["700","800","900","1 100"],a:1,e:"1 000 + 100 − 300."},
+{q:"То же. Процентный расход за год:",o:["300","100","200","0"],a:1,e:"10% × 1 000."},
+{q:"PV 1 000, первый платёж 250 в день 1, ставка 10%. Обязательство на конец года:",o:["1 100","825","750","850"],a:1,e:"750 + 75."},
+{q:"ROU 1 000, срок аренды 5 лет, право собственности не переходит. Амортизация:",o:["100","200","250","0"],a:1,e:"Срок аренды."},
+{q:"Право собственности перейдёт в конце аренды. Амортизация ROU по сроку:",o:["Аренды","Полезной жизни актива","10 лет всегда","Не начисляется"],a:1,e:"Актив останется у арендатора."},
+{q:"Current часть lease liability:",o:["Весь долг","Основной долг к погашению в следующие 12 мес.","Проценты прошлого года","Ноль"],a:1,e:"Остальное — non-current."},
+{q:"Краткосрочная аренда (исключение) в P&L:",o:["Не отражается","Расход равномерно","Через OCI","Как кредит"],a:1,e:"Straight-line expense."},
+{q:"Стимул от арендодателя (lease incentive):",o:["Увеличивает ROU","Уменьшает ROU","Доход сразу","Капитал"],a:1,e:"Вычитается из ROU."},
+{q:"Sale & leaseback (передача = продажа). Прибыль признаётся:",o:["Полностью","Только за права, переданные покупателю","Никогда","В OCI"],a:1,e:"Часть прибыли относится к сохранённому праву пользования."},
+{q:"Почему IFRS 16 заменил IAS 17?",o:["Чтобы снизить налоги","Долги по аренде были скрыты вне баланса","Чтобы упростить","По требованию банков"],a:1,e:"Substance over form, faithful representation."}
+]});
+
+/* ===== PART 3 ===== */
+T.push({id:"ias37",sec:"B. Выручка и обязательства",n:"IAS 37",name:"Резервы",i:"⚖️",
+slides:[
+{t:"title",i:"⚖️",h:"IAS 37 Provisions & Contingencies",s:"Когда «возможно заплатим» становится обязательством"},
+{t:"flow",h:"Резерв признаём, если (все 3)",steps:["Есть **текущая обязанность** (юридическая или конструктивная) из прошлого события","Отток денег **вероятен** (more likely than not)","Сумму можно **надёжно оценить**"],en:"A provision is a liability of uncertain timing or amount."},
+{t:"cards",h:"Что делать с вероятностью",cards:[["✅","Вероятно","Обязательство → **резерв**"],["🤔","Возможно","Contingent liability → **раскрыть**"],["🌫","Маловероятно (remote)","Ничего"],["💰","Актив: практически точно","Признать актив"],["🙂","Актив: вероятно","Только раскрыть"]],
+ joke:"Значит, если суд «может быть» проиграем — пишем резерв? — Только если «скорее да, чем нет»."},
+{t:"calc",h:"Оценка: гарантия",lines:["1 000 холодильников продано","10% — мелкий ремонт по 50","5% — крупный ремонт по 200","Expected value:","1 000 × (10% × 50 + 5% × 200)","= 1 000 × 15 = 15 000"],note:"Много мелких случаев → expected value. Один иск → наиболее вероятный исход."},
+{t:"compare",h:"Особые случаи",l:{h:"✅ Резерв",items:["Опубликованная политика возврата (конструктивная)","Обременительный договор (onerous)","Реструктуризация: детальный план + объявлено","Демонтаж: PV → в cost актива"]},r:{h:"❌ Не резерв",items:["Будущие операционные убытки","Будущий ремонт","Решение закрыть цех, не объявленное"]}},
+{t:"calc",h:"Демонтаж (decommissioning)",lines:["PV будущего демонтажа 300","Dr Актив (PPE) 300","  Cr Резерв 300","Каждый год: unwinding discount","Dr Финансовый расход / Cr Резерв"]}
+],
+qs:[
+{q:"Резерв признаётся, когда:",o:["Директор решил","Есть текущая обязанность, вероятный отток и надёжная оценка","Есть риск","Всегда при судах"],a:1,e:"Все три условия."},
+{q:"Пример конструктивной обязанности:",o:["Кредит банка","Опубликованная политика возврата денег клиентам","Будущий ремонт","План купить станок"],a:1,e:"Компания создала обоснованные ожидания."},
+{q:"Обязательство возможное, но не вероятное:",o:["Резерв","Раскрыть contingent liability","Ничего","Актив"],a:1,e:"Possible → disclosure."},
+{q:"Обязательство маловероятное (remote):",o:["Резерв","Раскрыть","Ничего","Капитал"],a:2,e:"Remote — не раскрываем."},
+{q:"Contingent asset вероятный, но не практически точный:",o:["Признать актив","Раскрыть","Ничего","Доход"],a:1,e:"Актив признаётся, только если virtually certain."},
+{q:"Будущие операционные убытки:",o:["Резерв","Не признаём резерв","Раскрыть как актив","OCI"],a:1,e:"Нет обязанности из прошлого события."},
+{q:"1 000 товаров: 10% ремонт по 50, 5% по 200. Резерв:",o:["250 000","15 000","5 000","10 000"],a:1,e:"Expected value: 1 000 × 15."},
+{q:"Один судебный иск, оценка суммы:",o:["Expected value","Наиболее вероятный исход","Максимальная сумма","Ноль"],a:1,e:"Single obligation → most likely outcome."},
+{q:"Обязательство демонтажа, PV 300:",o:["Dr P&L / Cr Резерв","Dr Актив / Cr Резерв","Dr Резерв / Cr Cash","Не признаём"],a:1,e:"Включается в cost актива."},
+{q:"Ежегодное unwinding of discount:",o:["Доход","Финансовый расход","OCI","Капитал"],a:1,e:"Резерв растёт к будущей сумме."},
+{q:"Резерв на реструктуризацию требует:",o:["Только решения совета","Детального плана и обоснованных ожиданий (объявлено)","Устного решения","Согласия банка"],a:1,e:"Иначе нет конструктивной обязанности."},
+{q:"Обременительный договор (onerous):",o:["Ничего","Резерв на неизбежные затраты","Доход","Раскрыть"],a:1,e:"Меньшее из затрат на исполнение и штрафа за выход."},
+{q:"Совет решил закрыть подразделение, но не объявил и плана нет:",o:["Резерв","Нет резерва","Раскрыть как актив","OCI"],a:1,e:"Нет обязанности."},
+{q:"Будущий плановый ремонт печи через 5 лет:",o:["Резерв","Нет резерва","Актив","Доход"],a:1,e:"Можно избежать (продать печь) — нет текущей обязанности."},
+{q:"Резерв оценивается по:",o:["Минимальной сумме","Наилучшей оценке (best estimate)","Максимальной сумме","Налоговой оценке"],a:1,e:"Best estimate."}
+]});
+
+T.push({id:"ias10",sec:"B. Выручка и обязательства",n:"IAS 10",name:"События после отчётной даты",i:"📅",
+slides:[
+{t:"title",i:"📅",h:"IAS 10 Events after the Reporting Period",s:"Между 31 декабря и подписанием отчёта"},
+{t:"flow",h:"Временная линия",steps:["31 декабря — отчётная дата","Январь–март — готовим отчёт, происходят события","Дата **утверждения** отчёта к выпуску — конец периода IAS 10"]},
+{t:"compare",h:"Два вида событий",l:{h:"Adjusting",items:["Дают доказательства условий, которые **были** на 31.12","→ **меняем** цифры"]},r:{h:"Non-adjusting",items:["Условия возникли **после** 31.12","→ **раскрываем**, если существенно"]},
+ joke:"Склад сгорел 10 января — переписываем баланс? — Нет, пожар был в январе. Раскрываем."},
+{t:"compare",h:"Примеры",l:{h:"Adjusting",items:["Банкротство клиента (долг был на 31.12)","Запасы проданы ниже cost (доказательство NRV)","Решение суда по старому делу","Обнаружено мошенничество/ошибка"]},r:{h:"Non-adjusting",items:["Пожар, наводнение после 31.12","Падение цен акций после 31.12","Крупная покупка компании","Выпуск акций"]}},
+{t:"trap",h:"Ловушки",items:["Дивиденды, объявленные после 31.12 → **не** обязательство, раскрыть","Going concern ухудшился после 31.12 → отчёт **не** на основе непрерывности","События после даты утверждения → вне IAS 10"]}
+],
+qs:[
+{q:"Adjusting event — это событие, которое:",o:["Произошло после 31.12 впервые","Даёт доказательства условий на отчётную дату","Касается дивидендов","Любое крупное"],a:1,e:"Условия существовали на 31.12."},
+{q:"Клиент обанкротился в январе, долг был на 31.12:",o:["Non-adjusting","Adjusting","Игнорируем","Только OCI"],a:1,e:"Подтверждает, что долг на 31.12 был невозвратным."},
+{q:"Склад сгорел 10 января:",o:["Adjusting","Non-adjusting, раскрыть если существенно","Резерв на 31.12","Ничего"],a:1,e:"Условие возникло после."},
+{q:"В феврале запасы проданы ниже cost:",o:["Non-adjusting","Adjusting (доказательство NRV)","Только раскрытие","OCI"],a:1,e:"Показывает NRV на отчётную дату."},
+{q:"Суд по делу, начатому до 31.12, вынес решение в феврале:",o:["Non-adjusting","Adjusting","Contingent asset","Ничего"],a:1,e:"Уточняет обязанность на 31.12."},
+{q:"Дивиденды объявлены в феврале:",o:["Обязательство на 31.12","Не обязательство, раскрыть","Расход","Резерв"],a:1,e:"Обязанности на 31.12 не было."},
+{q:"Период IAS 10 заканчивается:",o:["31 января","Датой утверждения отчётности к выпуску","Через 12 месяцев","Датой аудита"],a:1,e:"Date of authorisation for issue."},
+{q:"После 31.12 стало ясно, что компания закроется (не going concern):",o:["Раскрыть","Отчёт не на основе непрерывности деятельности","Ничего","Резерв"],a:1,e:"Особое правило IAS 10."},
+{q:"В марте Artel купил другую компанию:",o:["Adjusting","Non-adjusting","Ошибка","Резерв"],a:1,e:"Новое событие — раскрыть."},
+{q:"Акции, которыми владеет компания, упали в цене в январе:",o:["Adjusting","Non-adjusting","Обесценение на 31.12","Ничего"],a:1,e:"Цена на 31.12 была рыночной."},
+{q:"Обнаружено мошенничество, искажающее отчёт:",o:["Non-adjusting","Adjusting","Только раскрыть","Игнорировать"],a:1,e:"Отчёт неверен — исправляем."},
+{q:"Существенное non-adjusting событие:",o:["Ничего","Раскрыть характер и оценку эффекта","Изменить цифры","Резерв"],a:1,e:"Disclosure."},
+{q:"Выпуск акций в феврале:",o:["Adjusting","Non-adjusting","Капитал на 31.12","Ошибка"],a:1,e:"Новая операция."},
+{q:"Эффект adjusting event:",o:["Только примечание","Меняем суммы в отчётности","В следующий год","OCI"],a:1,e:"Корректируем цифры."},
+{q:"Год до 31.12, утверждён 15 марта. Событие 20 марта:",o:["Adjusting","Non-adjusting","Вне периода IAS 10","Резерв"],a:2,e:"После утверждения отчёта."}
+]});
+
+T.push({id:"ifrs9",sec:"B. Выручка и обязательства",n:"IFRS 9 / IAS 32",name:"Финансовые инструменты",i:"📊",
+slides:[
+{t:"title",i:"📊",h:"IFRS 9 & IAS 32 Financial Instruments",s:"Кредиты, облигации, акции: долг или капитал, и как оценивать"},
+{t:"compare",h:"IAS 32: долг или капитал?",l:{h:"Обязательство",items:["Есть **обязанность** платить","Погашаемые привилегированные акции","Облигации, кредиты"]},r:{h:"Капитал",items:["Нет обязанности платить","Обыкновенные акции","Дивиденды — по желанию"]},
+ joke:"Акции, но обязаны выкупить? — Это долг в костюме акции."},
+{t:"cards",h:"IFRS 9: финансовые активы",cards:[["📘","Amortised cost","Держим, чтобы получать платежи (SPPI)"],["📗","FVOCI","Долг: держим и продаём; акции: безотзывный выбор"],["📙","FVPL","Всё остальное, торговые акции"]],note:"Решают: бизнес-модель + характер денежных потоков (SPPI)."},
+{t:"calc",h:"Amortised cost: обязательство",lines:["Номинал 10 000, затраты на выпуск 500","Начало: 9 500","Эффективная ставка 8%, купон 5% (500)","Процентный расход 9 500 × 8% = 760","Платёж купона −500","Конец: 9 500 + 760 − 500 = 9 760"]},
+{t:"calc",h:"Конвертируемые облигации",lines:["Получено 2 000","PV платежей по рыночной ставке","  (без права конвертации) = 1 800","Обязательство 1 800","Капитал (опцион) 2 000 − 1 800 = 200"],en:"Compound instruments are split into liability and equity components."},
+{t:"trap",h:"Ловушки",items:["Затраты на сделку по FVPL → **расход**","Затраты по amortised cost → **уменьшают** обязательство","FVOCI для акций — **без** рециклинга в P&L","Expected credit losses: резерв с самого начала"]}
+],
+qs:[
+{q:"Погашаемые (обязательно выкупаемые) привилегированные акции:",o:["Капитал","Обязательство","Доход","Резерв"],a:1,e:"Есть обязанность заплатить."},
+{q:"Большинство финансовых обязательств оцениваются по:",o:["Fair value","Amortised cost","Номиналу","Cost"],a:1,e:"По эффективной ставке."},
+{q:"Облигации номинал 10 000, затраты на выпуск 500. Первоначальная оценка:",o:["10 500","9 500","10 000","500"],a:1,e:"Затраты уменьшают обязательство."},
+{q:"Обязательство 9 500, эффективная 8%, купон 500. Конец года:",o:["9 500","9 760","10 260","9 000"],a:1,e:"9 500 + 760 − 500."},
+{q:"Конвертируемые: получено 2 000, PV долга 1 800. Капитал:",o:["0","200","1 800","2 000"],a:1,e:"Разница — опцион."},
+{q:"Облигации держим, чтобы получать проценты и номинал (SPPI):",o:["FVPL","Amortised cost","FVOCI всегда","Cost"],a:1,e:"Бизнес-модель «hold to collect»."},
+{q:"Акции, купленные для перепродажи (trading):",o:["Amortised cost","FVPL","Cost","FVOCI обязательно"],a:1,e:"Торговые — через P&L."},
+{q:"Акции не для торговли, сделан безотзывный выбор:",o:["FVPL","FVOCI без рециклинга","Amortised cost","Cost"],a:1,e:"Изменения FV в OCI, в P&L не переносятся."},
+{q:"Затраты на сделку по активу FVPL:",o:["В cost актива","Расход P&L","OCI","Капитал"],a:1,e:"Для FVPL — сразу расход."},
+{q:"Акции FVPL куплены за 1 000, на конец года 1 200:",o:["+200 OCI","+200 P&L","Нет учёта","+200 капитал"],a:1,e:"Изменение FV в P&L."},
+{q:"Облигация выпущена за 9 000, погашается 10 000 через 2 года, купона нет. Общий финансовый расход:",o:["0","1 000","9 000","10 000"],a:1,e:"Распределяется по эффективной ставке."},
+{q:"Резерв ожидаемых кредитных убытков (ECL) создаётся:",o:["Только при дефолте","С первоначального признания","Никогда","Раз в 5 лет"],a:1,e:"Модель ожидаемых, а не понесённых убытков."},
+{q:"Обыкновенные акции, выпущенные компанией:",o:["Обязательство","Капитал","Доход","Резерв"],a:1,e:"Нет обязанности платить."},
+{q:"Составной инструмент (конвертируемые облигации):",o:["Всё обязательство","Всё капитал","Делим на обязательство и капитал","Доход"],a:2,e:"Split accounting."},
+{q:"Купили облигацию за 1 000, эффективная 10%, купон получен 80. Конец года:",o:["1 000","1 020","1 100","920"],a:1,e:"1 000 + 100 − 80."}
+]});
+
+T.push({id:"ias12",sec:"B. Выручка и обязательства",n:"IAS 12",name:"Налог на прибыль",i:"🧾",
+slides:[
+{t:"title",i:"🧾",h:"IAS 12 Income Taxes",s:"Текущий и отложенный налог"},
+{t:"compare",h:"Два налога",l:{h:"Current tax",items:["Налог к уплате за год","+ недоплата / − переплата прошлого года"]},r:{h:"Deferred tax",items:["Налог «на будущее»","Из-за разницы бухучёта и налогового учёта"]},
+ joke:"Платим налог, которого ещё нет? — Не платим, а показываем, что он придёт."},
+{t:"formula",h:"Временная разница",f:"TD = Carrying amount − Tax base",parts:[["Актив CA > TB","Taxable → DTL (обязательство)"],["Обязательство CA > TB","Deductible → DTA (актив)"],["Ставка","Ожидаемая при восстановлении"]]},
+{t:"calc",h:"Ускоренная налоговая амортизация",lines:["Станок: CA 800, налоговая база 600","Taxable TD = 200","DTL = 200 × 20% = 40","Было DTL 30 → расход 10 в P&L"]},
+{t:"list",h:"Куда идёт отложенный налог",items:["Разница из P&L → в **P&L**","Переоценка в OCI → DT тоже в **OCI** (500 × 20% = 100)","Постоянные разницы (штрафы) → отложенного налога **нет**","DTA признаём, если **вероятна** будущая налогооблагаемая прибыль","Не дисконтируем"]},
+{t:"calc",h:"Налоговый расход в P&L",lines:["Current tax за год        100","Недоплата прошлого года  + 20","Изменение DTL            + 10","Итого расход             130"]}
+],
+qs:[
+{q:"Current tax — это:",o:["Налог на будущее","Налог к уплате за текущий год","Резерв","Отложенный актив"],a:1,e:"По налогооблагаемой прибыли года."},
+{q:"Оценка налога за год 100, недоплата прошлого года 20. Расход:",o:["80","120","100","20"],a:1,e:"Недоплата увеличивает расход."},
+{q:"Временная разница =",o:["Tax base − выручка","Carrying amount − tax base","Прибыль − налог","CA × ставка"],a:1,e:"Основная формула."},
+{q:"Актив CA 800, tax base 600, ставка 20%. DTL:",o:["160","40","200","120"],a:1,e:"200 × 20%."},
+{q:"Переоценка 500, ставка 20%. Отложенный налог 100 идёт в:",o:["P&L","OCI","Капитал напрямую","Не признаём"],a:1,e:"Туда же, куда сама переоценка."},
+{q:"Резерв по гарантии 100, вычитается при оплате (TB 0):",o:["DTL","DTA","Нет разницы","Постоянная разница"],a:1,e:"Deductible temporary difference."},
+{q:"DTL на начало 30, на конец 40. Расход по отложенному налогу:",o:["40","10","30","70"],a:1,e:"Изменение 10."},
+{q:"Невычитаемый штраф:",o:["DTL","DTA","Нет отложенного налога","OCI"],a:2,e:"Постоянная разница."},
+{q:"DTA признаётся, если:",o:["Всегда","Вероятна будущая налогооблагаемая прибыль","Никогда","Если есть убыток"],a:1,e:"Иначе актив не реализуется."},
+{q:"Ставка для отложенного налога:",o:["Прошлогодняя","Ожидаемая при восстановлении (принятая)","Любая","Средняя за 5 лет"],a:1,e:"Enacted / substantively enacted."},
+{q:"Налоговый расход в P&L =",o:["Только current","Current + изменение deferred (кроме OCI)","Только deferred","Уплаченный налог"],a:1,e:"Оба компонента."},
+{q:"Оценка за год 200, переплата прошлого года 15. Current tax expense:",o:["215","185","200","15"],a:1,e:"Переплата уменьшает расход."},
+{q:"Ускоренная налоговая амортизация создаёт:",o:["DTA","DTL","Ничего","Резерв"],a:1,e:"CA актива > TB."},
+{q:"Налоговые убытки к переносу:",o:["DTL","DTA, если вероятна прибыль","Расход","Капитал"],a:1,e:"Можно будет уменьшить налог."},
+{q:"Отложенный налог дисконтируется?",o:["Да","Нет","Только DTA","Только DTL"],a:1,e:"IAS 12 запрещает дисконтирование."}
+]});
+
+T.push({id:"ias8",sec:"C. Отчётность",n:"IAS 8",name:"Политика, оценки, ошибки",i:"🔧",
+slides:[
+{t:"title",i:"🔧",h:"IAS 8 Policies, Estimates & Errors",s:"Что пересчитывать назад, а что — только вперёд"},
+{t:"cards",h:"Три вида изменений",cards:[["📜","Политика","FIFO → weighted average → **ретроспективно**"],["🔮","Оценка","Срок, метод амортизации, % резерва → **перспективно**"],["❌","Ошибка","Существенная ошибка прошлых лет → **ретроспективно**"]],
+ joke:"Сменили срок службы — переписываем 5 лет отчётов? — Нет, это оценка. Только вперёд!"},
+{t:"compare",h:"Ретро vs перспектива",l:{h:"Ретроспективно",items:["Как будто всегда так было","Пересчёт сравнительных данных","Корректировка входящего RE"]},r:{h:"Перспективно",items:["С текущего периода вперёд","Прошлое не трогаем"]}},
+{t:"list",h:"Когда можно менять политику",items:["Требует новый стандарт IFRS","Или даёт **более надёжную и уместную** информацию","Новая политика для новых по сути операций — **не** изменение политики","Первый переход на переоценку IAS 16 — как переоценка, не ретроспективно"]},
+{t:"calc",h:"Ошибка прошлого года",lines:["Запасы прошлого года завышены на 50","Прибыль прошлого года завышена на 50","→ пересчитываем сравнительные данные","→ входящий RE текущего года −50","(в отчёте об изменениях капитала)"]}
+],
+qs:[
+{q:"Переход с FIFO на weighted average:",o:["Изменение оценки","Изменение политики, ретроспективно","Ошибка","Перспективно"],a:1,e:"Метод оценки запасов — политика."},
+{q:"Изменение срока полезного использования:",o:["Политика","Оценка, перспективно","Ошибка","Ретроспективно"],a:1,e:"Change in estimate."},
+{q:"Существенная ошибка прошлого года:",o:["Перспективно","Ретроспективное исправление","Игнорируем","OCI"],a:1,e:"Restate comparatives."},
+{q:"Политику можно сменить, если:",o:["Хочется больше прибыли","Требует IFRS или информация станет надёжнее и уместнее","Новый директор","Каждый год"],a:1,e:"Два основания."},
+{q:"Смена метода амортизации:",o:["Политика","Оценка","Ошибка","Не допускается"],a:1,e:"IAS 8: изменение оценки."},
+{q:"Запасы прошлого года завышены на 50. Входящий RE текущего года:",o:["+50","−50","Без изменений","−100"],a:1,e:"Прибыль прошлого года была завышена."},
+{q:"Изменение % резерва по сомнительным долгам:",o:["Политика","Оценка","Ошибка","Капитал"],a:1,e:"Суждение о будущем."},
+{q:"Новая политика для операций, новых по сути:",o:["Изменение политики","Не изменение политики","Ошибка","Ретроспектива"],a:1,e:"Раньше таких операций не было."},
+{q:"Ретроспективно значит:",o:["Только текущий год","Как будто всегда применяли; пересчёт сравнительных данных","Со следующего года","В OCI"],a:1,e:"Restate."},
+{q:"Перспективно значит:",o:["Пересчёт прошлого","С текущего периода вперёд","Только в примечаниях","Удаление данных"],a:1,e:"Prospective."},
+{q:"Ошибку прошлого года нашли после выпуска того отчёта:",o:["Исправляем в текущем году через P&L","Исправляем сравнительные данные в текущем отчёте","Игнорируем","Перевыпуск не нужен, только раскрыть"],a:1,e:"Retrospective restatement."},
+{q:"Невозможно определить эффект за все годы:",o:["Не применяем","С самой ранней возможной даты","Только перспективно всегда","Только раскрываем"],a:1,e:"Impracticability."},
+{q:"Первый переход на модель переоценки IAS 16:",o:["Ретроспективно по IAS 8","Как переоценка по IAS 16","Ошибка","Не допускается"],a:1,e:"Исключение в IAS 8."},
+{q:"Раскрытие изменения оценки:",o:["Не нужно","Характер и сумма эффекта","Только если ошибка","Только в OCI"],a:1,e:"Disclosure."},
+{q:"Изменение оценки влияет на:",o:["Только прошлые годы","Текущий и будущие периоды","Только капитал","Ничего"],a:1,e:"Prospective."}
+]});
+
+T.push({id:"ias33",sec:"C. Отчётность",n:"IAS 33",name:"Прибыль на акцию (EPS)",i:"🔢",
+slides:[
+{t:"title",i:"🔢",h:"IAS 33 Earnings per Share",s:"Сколько прибыли приходится на одну акцию"},
+{t:"formula",h:"Basic EPS",f:"EPS = прибыль для обыкновенных акционеров\n/ средневзвешенное число акций",parts:[["Числитель","Прибыль − дивиденды по безотзывным привилегированным"],["Знаменатель","Взвешиваем по времени"]]},
+{t:"calc",h:"Выпуск по полной цене",lines:["1 января: 1 000 акций","1 октября: выпуск 600 по рынку","Средневзвешенно:","1 000 + 600 × 3/12 = 1 150"]},
+{t:"calc",h:"Бонусный выпуск (1 за 4)",lines:["1 000 + 250 бонусных = 1 250","Считаем, как будто были весь год","Прошлый EPS 0.50 × 4/5 = 0.40","(пересчитываем сравнительный)"],
+ joke:"Бесплатные акции? Денег не пришло — значит и «времени» у них нет, как будто были всегда."},
+{t:"calc",h:"Rights issue (1 за 4 по 2.0, рынок 3.0)",lines:["TERP = (4 × 3.0 + 1 × 2.0) / 5 = 2.8","Бонусный фактор = 3.0 / 2.8 = 1.071","Акции до выпуска × 1.071 × время до","+ все акции × время после"]},
+{t:"list",h:"Diluted EPS",items:["Учитываем **потенциальные** акции","Конвертируемые: + проценты (после налога) к прибыли, + акции","Опционы: «бесплатные» акции = акции по опциону − выручка / рыночная цена","Антиразводняющие (повышают EPS) — **игнорируем**"]}
+],
+qs:[
+{q:"Basic EPS =",o:["Выручка / акции","Прибыль для обыкновенных акционеров / средневзвешенные акции","Дивиденды / акции","Прибыль / капитал"],a:1,e:"Основная формула."},
+{q:"Прибыль 1 000, дивиденды по безотзывным привилегированным 100. Числитель:",o:["1 000","900","1 100","100"],a:1,e:"Вычитаем привилегированные."},
+{q:"1 000 акций на 1 января, 1 октября выпущено 600 по рынку. Средневзвешенно:",o:["1 600","1 150","1 450","1 000"],a:1,e:"1 000 + 600 × 3/12."},
+{q:"1 000 акций, 1 июля бонусный выпуск 1 за 4. Акций для EPS:",o:["1 125","1 250","1 000","1 500"],a:1,e:"Бонусные — как будто весь год."},
+{q:"Бонус 1 за 4. Прошлогодний EPS 0.50 пересчитывается в:",o:["0.50","0.40","0.625","0.45"],a:1,e:"0.50 × 4/5."},
+{q:"Rights 1 за 4 по 2.0, рыночная цена 3.0. TERP:",o:["2.5","2.8","3.0","2.0"],a:1,e:"(12 + 2) / 5."},
+{q:"Бонусный фактор при этом rights issue:",o:["1.25","1.071","0.933","1.5"],a:1,e:"3.0 / 2.8."},
+{q:"Diluted EPS учитывает:",o:["Только выпущенные акции","Потенциальные обыкновенные акции","Привилегированные акции","Облигации без конвертации"],a:1,e:"Конвертируемые, опционы."},
+{q:"Конвертируемые облигации в diluted EPS: к прибыли добавляем:",o:["Ничего","Сэкономленные проценты после налога","Номинал","Дивиденды"],a:1,e:"Проценты не придётся платить после конвертации."},
+{q:"Опционы на 100 акций по 4, рыночная цена 5. «Бесплатные» акции:",o:["100","20","80","0"],a:1,e:"Выручка 400 / 5 = 80 по рынку; 100 − 80."},
+{q:"Антиразводняющие потенциальные акции:",o:["Включаем","Игнорируем","Удваиваем","В OCI"],a:1,e:"Diluted EPS не может быть выше basic."},
+{q:"EPS показывается:",o:["Только в примечаниях","На лицевой стороне P&L (листинговые компании)","В балансе","Не показывается"],a:1,e:"IAS 33 для listed entities."},
+{q:"Дивиденды по погашаемым привилегированным (обязательство):",o:["Вычитаем ещё раз","Уже в финансовых расходах — повторно не вычитаем","Добавляем","В OCI"],a:1,e:"Они уже уменьшили прибыль."},
+{q:"Зачем EPS?",o:["Для налогов","Сравнивать результат на акцию между периодами и компаниями","Для банков","Для зарплаты"],a:1,e:"Ключевой показатель для инвесторов."},
+{q:"Компания выкупила свои акции 1 июля:",o:["Не влияет","Уменьшают средневзвешенное с даты выкупа","Увеличивают","Весь год"],a:1,e:"Взвешиваем по времени."}
+]});
+
+/* ===== PART 4 ===== */
+T.push({id:"ias7",sec:"C. Отчётность",n:"IAS 7",name:"Отчёт о движении денег",i:"💸",
+slides:[
+{t:"title",i:"💸",h:"IAS 7 Statement of Cash Flows",s:"Прибыль — мнение, деньги — факт"},
+{t:"cards",h:"3 раздела",cards:[["⚙️","Operating","Основная деятельность"],["🏗","Investing","Покупка/продажа PPE, инвестиций"],["🏦","Financing","Акции, кредиты, аренда, дивиденды"]],
+ joke:"Прибыль есть, а денег нет? — Классика, Бахтиёр-ака. Смотрим cash flow."},
+{t:"flow",h:"Косвенный метод (operating)",steps:["Прибыль **до налога**","+ амортизация, обесценение (неденежные)","− прибыль / + убыток от продажи PPE","+/− изменения оборотного капитала","− уплаченные проценты и налог"]},
+{t:"compare",h:"Оборотный капитал",l:{h:"Вычитаем (−)",items:["Рост дебиторки","Рост запасов","Снижение кредиторки"]},r:{h:"Прибавляем (+)",items:["Снижение дебиторки","Снижение запасов","Рост кредиторки"]}},
+{t:"calc",h:"Найти покупки PPE",lines:["PPE начало 500, конец 650","Амортизация 80, продано по CA 30","Покупки = 650 − 500 + 80 + 30 = 260","→ Investing: −260"]},
+{t:"calc",h:"Найти уплаченный налог",lines:["Обязательство начало 40","+ расход за год 60","− обязательство конец 50","= уплачено 50"],en:"Find the missing cash figure by reconstructing the account (T-account logic)."},
+{t:"list",h:"Классификация по выбору",items:["Уплаченные проценты: operating **или** financing","Уплаченные дивиденды: financing **или** operating","Неденежные операции (ROU по аренде) — **не** в cash flow, раскрыть","Cash equivalents: ликвидные, ≤ 3 месяцев"]}
+],
+qs:[
+{q:"Косвенный метод начинается с:",o:["Выручки","Прибыли до налога","Денег на начало","Чистой прибыли после дивидендов"],a:1,e:"Profit before tax."},
+{q:"Амортизация в косвенном методе:",o:["Вычитается","Прибавляется","Не учитывается","Investing"],a:1,e:"Неденежный расход."},
+{q:"Рост дебиторки:",o:["Прибавляем","Вычитаем","Investing","Не учитываем"],a:1,e:"Продали, но деньги не пришли."},
+{q:"Рост кредиторки:",o:["Вычитаем","Прибавляем","Financing","Не учитываем"],a:1,e:"Расход есть, денег не заплатили."},
+{q:"Рост запасов:",o:["Прибавляем","Вычитаем","Investing","Financing"],a:1,e:"Деньги ушли в склад."},
+{q:"Покупка станка:",o:["Operating","Investing","Financing","Не отражается"],a:1,e:"Долгосрочные активы."},
+{q:"Выпуск акций:",o:["Operating","Investing","Financing","OCI"],a:2,e:"Деньги от владельцев."},
+{q:"Погашение кредита:",o:["Operating","Investing","Financing","Не отражается"],a:2,e:"Финансирование."},
+{q:"Уплаченные дивиденды:",o:["Только investing","Financing или operating","Не отражаются","Только OCI"],a:1,e:"IAS 7 разрешает выбор."},
+{q:"Прибыль от продажи PPE 20 в отчёте о прибыли:",o:["Прибавить в operating","Вычесть в operating, выручку показать в investing","Только investing","Игнорировать"],a:1,e:"Иначе посчитаем дважды."},
+{q:"PPE: начало 500, конец 650, амортизация 80, продано по CA 30. Покупки:",o:["150","260","230","180"],a:1,e:"650 − 500 + 80 + 30."},
+{q:"Налог: обязательство начало 40, расход 60, конец 50. Уплачено:",o:["60","50","40","30"],a:1,e:"40 + 60 − 50."},
+{q:"Cash equivalents — это:",o:["Любые акции","Высоколиквидные вложения до 3 месяцев","Дебиторка","Запасы"],a:1,e:"Например, короткий депозит."},
+{q:"Получение ROU-актива по аренде:",o:["Investing −","Не денежная операция, раскрыть","Financing +","Operating"],a:1,e:"Денег не было."},
+{q:"Уплаченные проценты:",o:["Только investing","Operating или financing","Не отражаются","Только OCI"],a:1,e:"Выбор политики."}
+]});
+
+T.push({id:"fs",sec:"C. Отчётность",n:"IAS 1 / IFRS 18",name:"Отчётность одной компании",i:"📑",
+slides:[
+{t:"title",i:"📑",h:"Отчётность одной компании",s:"Section C: собираем баланс и P&L из пробного баланса"},
+{t:"cards",h:"Полный комплект",cards:[["⚖️","SOFP","Баланс"],["📈","P&L и OCI","Прибыль и прочий доход"],["🔄","SOCIE","Изменения капитала"],["💸","Cash flows","Движение денег"],["📝","Notes","Примечания"]]},
+{t:"compare",h:"Current vs Non-current",l:{h:"Current",items:["Реализуется в течение 12 мес.","Или в обычном цикле","Часть кредита к погашению в след. году"]},r:{h:"Non-current",items:["Всё остальное","Остаток долгосрочного кредита","PPE, нематериальные"]}},
+{t:"flow",h:"Как решать Section C",steps:["Прочитать все примечания-корректировки","Сделать **workings**: PPE, запасы, резервы, налог, аренда","Внести корректировки в пробный баланс","Собрать P&L → прибыль","Собрать SOCIE и SOFP, проверить баланс"],
+ joke:"Сразу рисовать баланс? — Нет! Сначала workings, иначе запутаешься, как я в своей ферме."},
+{t:"list",h:"Где что показывать",items:["Переоценка → **OCI** (не рециклируется)","Дивиденды выплаченные → **SOCIE**, не P&L","Ошибка прошлых лет → входящий RE в **SOCIE**","Начисленные расходы (электричество за декабрь) → обязательство","Предоплата аренды на след. год → актив","Эмиссия: 100 акций по 1 за 3 → капитал 100, эмиссионный доход 200"]},
+{t:"list",h:"IFRS 18 (с 2027)",items:["Заменяет IAS 1","Новые категории в P&L: operating, investing, financing","Новые промежуточные итоги (operating profit)","⚠️ Проверь, какой стандарт тестируется в твою сессию"]}
+],
+qs:[
+{q:"Полный комплект отчётности включает:",o:["Только баланс и P&L","SOFP, P&L+OCI, SOCIE, cash flows, notes","Только cash flows","Баланс и налоговую декларацию"],a:1,e:"Пять компонентов."},
+{q:"Текущий актив — это:",o:["Срок службы > 1 года","Ожидается реализовать в течение 12 месяцев/цикла","Всегда деньги","Только запасы"],a:1,e:"Definition of current."},
+{q:"Рост от переоценки PPE:",o:["P&L","OCI","Выручка","Не отражается"],a:1,e:"Revaluation surplus."},
+{q:"Выплаченные дивиденды:",o:["Расход P&L","В отчёте об изменениях капитала","OCI","Не отражаются"],a:1,e:"Распределение владельцам."},
+{q:"Кредит на 5 лет, платёж следующего года:",o:["Весь non-current","Делим: current — платёж следующего года","Весь current","Капитал"],a:1,e:"Split."},
+{q:"Going concern означает:",o:["Компания продаётся","Отчёт исходит из продолжения деятельности","Компания прибыльна","Нет долгов"],a:1,e:"Basis of preparation."},
+{q:"Взаимозачёт активов и обязательств:",o:["Всегда","Не допускается, если не разрешено стандартом","По желанию","Только в группах"],a:1,e:"No offsetting."},
+{q:"Метод начисления (accrual basis):",o:["Признаём при оплате","Признаём, когда возникло, независимо от оплаты","Только выручка","Только расходы"],a:1,e:"Accruals."},
+{q:"Исправление ошибки прошлого года:",o:["P&L текущего года","Входящий RE в SOCIE","OCI","Не показываем"],a:1,e:"Retrospective."},
+{q:"Какие статьи OCI не переносятся в P&L?",o:["Резерв переоценки","Выручка","Амортизация","Проценты"],a:0,e:"Revaluation surplus — no recycling."},
+{q:"Электричество за декабрь 30 не оплачено на 31.12:",o:["Не отражаем","Расход 30 и обязательство (accrual)","Только примечание","Актив"],a:1,e:"Начисленный расход."},
+{q:"Аренда на следующий год оплачена заранее:",o:["Расход этого года","Предоплата (актив)","Обязательство","Капитал"],a:1,e:"Prepayment."},
+{q:"С чего начать задачу Section C?",o:["Сразу баланс","С workings по корректировкам","С cash flow","С EPS"],a:1,e:"Сначала все корректировки."},
+{q:"Выпущено 100 акций номиналом 1 по цене 3:",o:["Капитал 300","Акционерный капитал 100, эмиссионный доход 200","Доход 200","Обязательство 300"],a:1,e:"Share premium."},
+{q:"IFRS 18 заменяет:",o:["IAS 7","IAS 1","IAS 16","IFRS 15"],a:1,e:"Presentation of financial statements."}
+]});
+
+T.push({id:"consol1",sec:"D. Группы компаний",n:"IFRS 3 / 10",name:"Консолидация: баланс",i:"🏢",
+slides:[
+{t:"title",i:"🏢",h:"Консолидированный баланс",s:"Мать + дочка = одна экономическая семья"},
+{t:"cards",h:"Контроль (IFRS 10)",cards:[["💪","Power","Власть над деятельностью"],["🎲","Variable returns","Зависимость от результатов"],["🔗","Link","Может влиять на доход через власть"]],note:"Обычно > 50% голосующих акций → дочка (subsidiary)."},
+{t:"flow",h:"Шаблон W1–W5",steps:["**W1** Структура группы (% и дата)","**W2** Чистые активы дочки: на дату покупки и сейчас","**W3** Гудвил","**W4** NCI (доля меньшинства)","**W5** Нераспределённая прибыль группы"],
+ joke:"W1–W5? Как пять столпов плова. Без одного — не группа, а каша."},
+{t:"formula",h:"Гудвил (W3)",f:"Goodwill = Consideration + NCI − FV чистых активов",parts:[["NCI по FV","Полный гудвил"],["NCI пропорционально","Доля NCI × FV чистых активов"]]},
+{t:"calc",h:"Пример",lines:["P купила 80% S за 1 000","NCI по FV 250","FV чистых активов S 1 000","Гудвил = 1 000 + 250 − 1 000 = 250","Нераспр. прибыль S: при покупке 300, сейчас 500","Доля группы: 80% × 200 = 160 → W5","NCI сейчас: 250 + 20% × 200 = 290"]},
+{t:"trap",h:"Корректировки",items:["**FV-корректировки** (земля +100) → увеличивают чистые активы → меньше гудвил","**Внутригрупповые** долги: исключить обе стороны","**Деньги в пути** → добавить к деньгам группы","**PURP**: прибыль в остатках внутригрупповых запасов → убрать","Продавец S → PURP делится с NCI","Затраты на покупку (юристы) → расход, не гудвил"]}
+],
+qs:[
+{q:"Контроль по IFRS 10 — это:",o:["Владение 20%","Власть + переменная доходность + связь между ними","Место в совете","Совместное управление"],a:1,e:"Три элемента."},
+{q:"P купила 80% S:",o:["Ассоциированная","Дочерняя","Финансовая инвестиция","Совместное предприятие"],a:1,e:"Контроль."},
+{q:"Consideration 1 000, NCI по FV 250, FV чистых активов 1 000. Гудвил:",o:["0","250","200","1 250"],a:1,e:"1 000 + 250 − 1 000."},
+{q:"То же, NCI пропорционально (20%). Гудвил:",o:["250","200","0","1 200"],a:1,e:"NCI = 200; 1 000 + 200 − 1 000."},
+{q:"RE дочки: при покупке 300, сейчас 500. Доля группы (80%):",o:["400","160","200","40"],a:1,e:"80% × пост-покупочной прибыли 200."},
+{q:"NCI при покупке 250 (FV), рост RE дочки 200, NCI 20%. NCI сейчас:",o:["250","290","300","210"],a:1,e:"250 + 40."},
+{q:"FV-корректировка: земля дочки +100 при покупке:",o:["Увеличивает гудвил","Уменьшает гудвил","Не влияет","Идёт в P&L"],a:1,e:"Чистые активы больше."},
+{q:"P должна S 50, S должна получить от P 50:",o:["Показать обе","Исключить обе","Показать нетто","Только P"],a:1,e:"Внутри группы долгов нет."},
+{q:"P продала S товар: cost 80, цена 100, всё на складе S. PURP:",o:["100","20","80","0"],a:1,e:"Нереализованная прибыль группы."},
+{q:"Если продавец — дочка S, PURP:",o:["Только группа","Уменьшает прибыль S, делится с NCI","Игнорируем","В OCI"],a:1,e:"Корректируем прибыль продавца."},
+{q:"P: дебиторка 60, S: кредиторка 50, разница — деньги в пути:",o:["Игнорировать","Добавить 10 к деньгам группы","Списать 10","Гудвил"],a:1,e:"Сначала довести до исключения."},
+{q:"Обесценение гудвила 30 при NCI по FV (NCI 20%). На NCI относится:",o:["0","6","24","30"],a:1,e:"Делится 80/20."},
+{q:"Условное вознаграждение (contingent consideration):",o:["Не учитываем","По FV на дату покупки","Только при оплате","В OCI"],a:1,e:"Входит в consideration."},
+{q:"Юридические расходы на покупку дочки:",o:["В гудвил","Расход","В капитал","В OCI"],a:1,e:"IFRS 3."},
+{q:"Отсроченная оплата за дочку через 2 года:",o:["Номинал","PV","Не учитываем","В P&L"],a:1,e:"Дисконтируем."}
+]});
+
+T.push({id:"consol2",sec:"D. Группы компаний",n:"Consolidated P&L",name:"Консолидация: P&L",i:"📈",
+slides:[
+{t:"title",i:"📈",h:"Консолидированный P&L",s:"Складываем 100% построчно, убираем внутригрупповое"},
+{t:"flow",h:"Шаблон",steps:["Сложить P + S **100%** построчно","Дочку куплена в середине года → **по месяцам**","Убрать **внутригрупповые** продажи (из выручки и себестоимости)","PURP → **+** к себестоимости","Доп. амортизация FV-корректировок, обесценение гудвила","Прибыль: часть **группы** и часть **NCI**"]},
+{t:"calc",h:"Пример",lines:["Выручка P 1 000 + S 600 − внутригр. 100 = 1 500","Себест. P 600 + S 400 − 100 + PURP 20 = 920","S куплена 1 октября, выручка за год 1 200","  → в группу 1 200 × 3/12 = 300"]},
+{t:"calc",h:"Доля NCI в прибыли",lines:["Прибыль S 200, NCI 20% → 40","Если PURP 20 и продавец S:","(200 − 20) × 20% = 36","Доп. амортизация FV-корр. тоже уменьшает прибыль S"],
+ joke:"Мы владеем 80%, а складываем 100%? — Да! Контроль 100%, а долю NCI показываем отдельно."},
+{t:"list",h:"Что исключаем",items:["Внутригрупповые продажи и покупки","Проценты по внутригрупповым займам","Дивиденды от S в доходах P","Management charges между P и S"]}
+],
+qs:[
+{q:"Выручка P 1 000, S 600, внутригрупповые продажи 100. Выручка группы:",o:["1 600","1 500","1 400","1 700"],a:1,e:"Убираем внутригрупповое."},
+{q:"Себестоимость P 600, S 400, внутригр. 100, PURP 20. Группа:",o:["1 000","920","880","900"],a:1,e:"1 000 − 100 + 20."},
+{q:"S куплена 1 октября, выручка S за год 1 200. Включаем:",o:["1 200","300","900","0"],a:1,e:"Только 3 месяца после покупки."},
+{q:"Прибыль S 200, NCI 20%. Доля NCI:",o:["160","40","200","20"],a:1,e:"20% × 200."},
+{q:"То же, PURP 20, продавец S. Доля NCI:",o:["40","36","44","32"],a:1,e:"(200 − 20) × 20%."},
+{q:"Проценты по займу P → S:",o:["Включаем","Исключаем","Только у P","В OCI"],a:1,e:"Внутри группы."},
+{q:"Дивиденды от S в доходах P:",o:["Оставляем","Исключаем","В OCI","В выручку"],a:1,e:"Иначе двойной учёт прибыли S."},
+{q:"Обесценение гудвила при пропорциональном NCI относится на:",o:["NCI","Только группу","50/50","OCI"],a:1,e:"Гудвил только группы."},
+{q:"Доп. амортизация FV-корректировки здания дочки:",o:["Только группа","Уменьшает прибыль S, влияет на NCI","Не учитываем","OCI"],a:1,e:"Это прибыль S в групповом взгляде."},
+{q:"FV-корректировка здания +100, оставшийся срок 20 лет. Доп. амортизация в год:",o:["100","5","20","10"],a:1,e:"100 / 20."},
+{q:"Прибыль для владельцев материнской компании =",o:["Прибыль P","Итоговая прибыль − доля NCI","Прибыль S","Выручка − NCI"],a:1,e:"Attributable to owners of parent."},
+{q:"Прибыль S за год 400, куплена 1 апреля. Пост-покупочная прибыль:",o:["400","300","100","200"],a:1,e:"400 × 9/12."},
+{q:"Management fee от P к S:",o:["Включаем","Исключаем","Только у S","Выручка группы"],a:1,e:"Внутригрупповое."},
+{q:"При 80% владения строки S складываем:",o:["80%","100%","20%","Одной строкой"],a:1,e:"Line-by-line, 100%."},
+{q:"PURP в консолидированном P&L:",o:["Уменьшает себестоимость","Увеличивает себестоимость","Увеличивает выручку","Не влияет"],a:1,e:"Уменьшает прибыль."}
+]});
+
+T.push({id:"ias28",sec:"D. Группы компаний",n:"IAS 28",name:"Ассоциированные компании",i:"🤝",
+slides:[
+{t:"title",i:"🤝",h:"IAS 28 Associates",s:"Значительное влияние, но не контроль"},
+{t:"cards",h:"Признаки значительного влияния",cards:[["📊","20–50%","Обычно такая доля голосов"],["🪑","Место в совете","Участие в решениях"],["🔄","Существенные операции","Обмен менеджерами, технологиями"]]},
+{t:"formula",h:"Метод долевого участия",f:"Инвестиция = Cost + доля пост-покупочной прибыли\n− полученные дивиденды − обесценение",parts:[["P&L","Одна строка: доля прибыли ассоциированной"],["Баланс","Одна строка в non-current assets"]]},
+{t:"calc",h:"Пример",lines:["Купили 30% за 500","Пост-покупочная прибыль A 200","Инвестиция = 500 + 30% × 200 = 560","P&L: доля прибыли за год (100 × 30%) = 30","Дивиденды от A уменьшают инвестицию"]},
+{t:"trap",h:"Ловушки",items:["**Не** складываем построчно (это не дочка)","Внутригрупповые долги с A **не** исключаем","PURP с A: только **наша доля** (40 × 25% = 10)","Совместное предприятие (JV) — тоже метод долевого участия","15% + место в совете — может быть ассоциированной"],
+ joke:"30% — это ассоциированная, а 60% — дочка? — Да, а 10% — просто знакомая."}
+],
+qs:[
+{q:"Значительное влияние обычно при доле:",o:["< 20%","20–50%","> 50%","100%"],a:1,e:"Презумпция."},
+{q:"Метод учёта ассоциированной компании:",o:["Полная консолидация","Метод долевого участия","Cost","FVPL"],a:1,e:"Equity method."},
+{q:"Cost 500, доля 30%, пост-покупочная прибыль 200. Инвестиция:",o:["500","560","700","600"],a:1,e:"500 + 60."},
+{q:"Дивиденды от ассоциированной:",o:["Доход P&L группы","Уменьшают инвестицию","Увеличивают инвестицию","OCI"],a:1,e:"Деньги получены из уже учтённой доли."},
+{q:"В P&L группы ассоциированная показывается:",o:["Построчно","Одной строкой — доля прибыли","Только дивиденды","Не показывается"],a:1,e:"Share of profit of associate."},
+{q:"Прибыль ассоциированной 100, доля 25%:",o:["100","25","75","0"],a:1,e:"Доля группы."},
+{q:"P продала товар A, прибыль в запасах A 40, доля 25%. PURP:",o:["40","10","30","0"],a:1,e:"Только наша доля."},
+{q:"Обесценение инвестиции в ассоциированную:",o:["В OCI","Уменьшает инвестицию, расход P&L","Не признаётся","Гудвил"],a:1,e:"Тест IAS 36."},
+{q:"Долги между группой и ассоциированной:",o:["Исключаем","Не исключаем","Исключаем 50%","Только в OCI"],a:1,e:"Ассоциированная не часть группы."},
+{q:"Место в совете директоров — это признак:",o:["Контроля","Значительного влияния","Ничего","Совместного контроля всегда"],a:1,e:"Участие в решениях."},
+{q:"Совместное предприятие (joint venture):",o:["Полная консолидация","Метод долевого участия","Cost","Не учитываем"],a:1,e:"IFRS 11 → IAS 28."},
+{q:"Доля 60%:",o:["Ассоциированная","Дочерняя","Финансовая инвестиция","JV"],a:1,e:"Контроль."},
+{q:"Переоценка в OCI ассоциированной компании:",o:["Не учитываем","Доля группы в OCI группы","В P&L","В гудвил"],a:1,e:"Доля в прочем совокупном доходе."},
+{q:"Инвестиция в ассоциированную в балансе:",o:["Построчно","Одной строкой в non-current assets","Current assets","Капитал"],a:1,e:"Single line."},
+{q:"Доля 15%, но есть место в совете и обмен технологиями:",o:["Точно не ассоциированная","Может быть ассоциированной","Дочерняя","Обязательство"],a:1,e:"Решает суть влияния, а не только %."}
+]});
+
+T.push({id:"ratios",sec:"E. Анализ",n:"Analysis",name:"Анализ и коэффициенты",i:"🔍",
+slides:[
+{t:"title",i:"🔍",h:"Анализ и интерпретация",s:"Цифры — это история. Учимся её читать"},
+{t:"cards",h:"4 группы коэффициентов",cards:[["💰","Прибыльность","Gross margin, operating margin, ROCE"],["💧","Ликвидность","Current ratio, quick ratio"],["⚙️","Эффективность","Дни дебиторки, запасов, кредиторки"],["🏋️","Леверидж","Gearing, interest cover"]]},
+{t:"formula",h:"Ключевые формулы",f:"ROCE = PBIT / (капитал + долг)",parts:[["Gross margin","Валовая прибыль / выручка"],["Current ratio","Текущие активы / текущие обязательства"],["Quick ratio","(ТА − запасы) / ТО"],["Дни дебиторки","Дебиторка / выручка × 365"],["Дни запасов","Запасы / себестоимость × 365"],["Gearing","Долг / капитал"],["Interest cover","PBIT / проценты"]]},
+{t:"calc",h:"Пример",lines:["Выручка 1 000, валовая прибыль 300 → 30%","ТА 400, ТО 200 → current ratio 2.0","Дебиторка 100, выручка 730 → 50 дней","Долг 400, капитал 1 000 → gearing 40%","PBIT 200, проценты 40 → cover 5 раз"]},
+{t:"list",h:"Как писать интерпретацию",items:["Не просто «вырос», а **почему** (новый контракт, цены, IFRS 16)","Связывай коэффициенты между собой","Учитывай разовые события (продажа здания, переоценка)","Переоценка → капитал ↑, амортизация ↑ → **ROCE ↓**","IFRS 16 → долг ↑ → **gearing ↑**"],
+ joke:"ROCE упал — значит я плохой директор? — Не всегда! Может, вы просто переоценили здания."},
+{t:"list",h:"Ограничения анализа",items:["Historical cost, инфляция","Разные учётные политики компаний","Сезонность, разовые события","Creative accounting / window dressing"]}
+],
+qs:[
+{q:"Валовая прибыль 300, выручка 1 000. Gross margin:",o:["3%","30%","70%","300%"],a:1,e:"300 / 1 000."},
+{q:"ROCE =",o:["Чистая прибыль / выручка","PBIT / (капитал + долг)","Выручка / активы","Долг / капитал"],a:1,e:"Return on capital employed."},
+{q:"Текущие активы 400, текущие обязательства 200. Current ratio:",o:["0.5","2.0","200","1.5"],a:1,e:"400 / 200."},
+{q:"Quick ratio исключает:",o:["Деньги","Запасы","Дебиторку","Кредиторку"],a:1,e:"Запасы менее ликвидны."},
+{q:"Дебиторка 100, выручка 730. Дни дебиторки:",o:["7","50","100","73"],a:1,e:"100 / 730 × 365."},
+{q:"Запасы 60, себестоимость 365. Дни запасов:",o:["6","60","365","30"],a:1,e:"60 / 365 × 365."},
+{q:"Долг 400, капитал 1 000. Gearing (долг/капитал):",o:["4%","40%","250%","60%"],a:1,e:"400 / 1 000."},
+{q:"PBIT 200, проценты 40. Interest cover:",o:["0.2","5 раз","8 раз","160"],a:1,e:"200 / 40."},
+{q:"Переоценка активов вверх обычно:",o:["Увеличивает ROCE","Уменьшает ROCE","Не влияет","Увеличивает выручку"],a:1,e:"Капитал больше, амортизация больше."},
+{q:"Asset turnover =",o:["Выручка / capital employed","PBIT / выручка","Долг / активы","Запасы / выручка"],a:0,e:"Эффективность использования капитала."},
+{q:"Ограничение анализа отчётности:",o:["Слишком много данных","Historical cost и разные политики","Нет выручки","Есть аудит"],a:1,e:"Сопоставимость ограничена."},
+{q:"Дни кредиторки выросли с 30 до 60. Возможная причина:",o:["Только хорошие новости","Проблемы с ликвидностью или лучшие условия поставщиков","Рост выручки","Переоценка"],a:1,e:"Нужно смотреть контекст."},
+{q:"P/E ratio =",o:["Цена акции / EPS","EPS / цена","Дивиденд / цена","Прибыль / капитал"],a:0,e:"Price / earnings."},
+{q:"Dividend cover =",o:["DPS / EPS","EPS / DPS","Цена / дивиденд","Прибыль / налог"],a:1,e:"Сколько раз прибыль покрывает дивиденды."},
+{q:"Переход на IFRS 16 обычно:",o:["Снижает gearing","Повышает gearing","Не влияет","Повышает выручку"],a:1,e:"Долг по аренде в балансе."}
+]});
+
+
+/* ===== storage (works offline; falls back to memory) ===== */
+const MEM={};
+const LS={
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return k in MEM?MEM[k]:d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){MEM[k]=v}}
+};
+let scores=LS.get("f7_scores",{});
+const S={view:"home",ti:0,tab:"slides",si:0,ans:{},checked:false};
+const app=document.getElementById("app");
+
+const JOKES=[
+ "Плов на открытии линии — вкусный. Но в cost актива он не входит.",
+ "Сотрудники — наш главный актив! В речи на собрании — да. В балансе — нет: их нельзя контролировать.",
+ "Делим на ОСТАВШИЕСЯ годы, а не на весь срок. Повторяю, как мантру.",
+ "Резерв переоценки — это подушка. Сначала падаем на неё, потом уже в P&L.",
+ "Купил бренд — актив. Рекламировал свой бренд — расход. Обидно, но честно.",
+ "Корова растёт — доход. Станок стареет — расход. Вот почему я купил ферму.",
+ "LIFO запрещён. Склад по ценам пятилетней давности — это не баланс, это музей.",
+ "Убыток от обесценения — не трагедия. Трагедия — его не признать.",
+ "Если в задаче 1 октября — считай 9 месяцев, а не 10. Проверено на себе.",
+ "Goodwill растёт от души, а обесценивается от реальности."
+];
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function md(s){return esc(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}
+function ring(pct,size,stroke,color,label){
+  size=size||84;stroke=stroke||9;const r=(size-stroke)/2,c=2*Math.PI*r,off=c*(1-Math.max(0,Math.min(1,pct)));
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+
+   '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="'+stroke+'"/>'+
+   '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="'+(color||"#fff")+'" stroke-width="'+stroke+'" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+off+'" transform="rotate(-90 '+size/2+' '+size/2+')" style="transition:stroke-dashoffset .6s"/>'+
+   '<text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle" font-size="'+(size/4.6)+'" font-weight="800" fill="'+(color||"#fff")+'">'+(label!=null?label:Math.round(pct*100)+"%")+'</text></svg>';
+}
+function badge(id){
+  const b=scores[id];
+  if(b==null)return '<span class="badge b-new">новая</span>';
+  const cls=b>=12?"b-ok":b>=8?"b-mid":"b-bad";
+  return '<span class="badge '+cls+'">лучший: '+b+'/15</span>';
+}
+
+/* ===== HOME ===== */
+function home(){
+  const total=T.length;
+  const passed=T.filter(t=>(scores[t.id]||0)>=10).length;
+  const avg=total?T.reduce((s,t)=>s+(scores[t.id]||0),0)/(total*15):0;
+  const joke=JOKES[Math.floor(Math.random()*JOKES.length)];
+  let h='<div class="wrap"><div class="hero"><h1>📘 F7 Тренажёр</h1><p>ACCA Financial Reporting · слайды + тесты · офлайн</p>'+
+   '<div class="hero-row">'+ring(avg,88,10)+'<div class="hero-stats">Средний результат<br><b>'+passed+' / '+total+'</b> тем сдано<br><small>(сдано = 10+ из 15)</small></div></div></div>'+
+   '<div class="tip"><div class="av">👨‍💼</div><div><small>Бахтиёр-ака советует</small>'+md(joke)+'</div></div>';
+  const secs=[];T.forEach((t,i)=>{let s=secs.find(x=>x.n===t.sec);if(!s){s={n:t.sec,items:[]};secs.push(s)}s.items.push(i)});
+  secs.forEach(s=>{
+    h+='<div class="sec-h">'+esc(s.n)+'</div><div class="grid">';
+    s.items.forEach(i=>{const t=T[i];
+      h+='<button class="tc" onclick="openT('+i+')"><span class="ic">'+t.i+'</span><span class="code">'+esc(t.n)+'</span><span class="nm">'+esc(t.name)+'</span>'+badge(t.id)+'</button>';});
+    h+='</div>';
+  });
+  h+='<div class="foot">Результаты хранятся на этом устройстве.<br><button class="reset" onclick="resetAll()">Сбросить все результаты</button></div></div>';
+  app.innerHTML=h;window.scrollTo(0,0);
+}
+function resetAll(){if(confirmReset()){scores={};LS.set("f7_scores",scores);home()}}
+function confirmReset(){try{return window.confirm("Сбросить все результаты?")}catch(e){return true}}
+function makePerm(t){return t.qs.map(q=>{const a=q.o.map((_,k)=>k);for(let k=a.length-1;k>0;k--){const r=Math.floor(Math.random()*(k+1));const x=a[k];a[k]=a[r];a[r]=x}return a})}
+function openT(i){S.view="topic";S.ti=i;S.tab="slides";S.si=0;S.ans={};S.checked=false;S.perm=makePerm(T[i]);render()}
+function goHome(){S.view="home";render()}
+
+/* ===== SLIDES ===== */
+function slideHTML(s){
+  let h="";
+  switch(s.t){
+    case"title":h='<div class="s-title"><div class="big">'+s.i+'</div><h2>'+md(s.h)+'</h2><p>'+md(s.s||"")+'</p></div>';break;
+    case"cards":h='<h2>'+md(s.h)+'</h2><div class="cards">'+s.cards.map(c=>'<div class="cardx"><div class="ci">'+c[0]+'</div><b>'+md(c[1])+'</b><span>'+md(c[2])+'</span></div>').join("")+'</div>';break;
+    case"list":h='<h2>'+md(s.h)+'</h2><ul class="lst">'+s.items.map(x=>'<li>'+md(x)+'</li>').join("")+'</ul>';break;
+    case"trap":h='<h2>🪤 '+md(s.h)+'</h2><ul class="lst trap">'+s.items.map(x=>'<li>'+md(x)+'</li>').join("")+'</ul>';break;
+    case"flow":h='<h2>'+md(s.h)+'</h2><div class="flow">'+s.steps.map((x,i)=>(i?'<div class="farr"></div>':'')+'<div class="fs"><div class="num">'+(i+1)+'</div><div class="tx">'+md(x)+'</div></div>').join("")+'</div>';break;
+    case"formula":h='<h2>'+md(s.h)+'</h2><div class="formula">'+md(s.f)+'</div>'+(s.parts?'<table class="pt">'+s.parts.map(p=>'<tr><td>'+md(p[0])+'</td><td>'+md(p[1])+'</td></tr>').join("")+'</table>':'');break;
+    case"compare":h='<h2>'+md(s.h)+'</h2><div class="cmp"><div class="col cl"><h3>'+md(s.l.h)+'</h3><ul>'+s.l.items.map(x=>'<li>'+md(x)+'</li>').join("")+'</ul></div><div class="col cr"><h3>'+md(s.r.h)+'</h3><ul>'+s.r.items.map(x=>'<li>'+md(x)+'</li>').join("")+'</ul></div></div>';break;
+    case"calc":h='<h2>'+md(s.h)+'</h2><div class="calc">'+md(s.lines.join("\n"))+'</div>';break;
+    case"bars":{const max=Math.max.apply(null,s.bars.map(b=>b[1]))||1;const rowH=46;const W=320;
+      const cols=["#4f46e5","#0d9488","#d97706","#db2777","#16a34a","#7c3aed"];
+      let svg='<svg viewBox="0 0 '+W+' '+(s.bars.length*rowH+6)+'" width="100%" role="img">';
+      s.bars.forEach((b,i)=>{const y=i*rowH;const w=Math.max(4,(W-70)*b[1]/max);
+        svg+='<text x="0" y="'+(y+13)+'" font-size="12" fill="currentColor" opacity=".75">'+esc(b[0])+'</text>'+
+        '<rect x="0" y="'+(y+18)+'" width="'+w+'" height="20" rx="7" fill="'+cols[i%cols.length]+'"><animate attributeName="width" from="0" to="'+w+'" dur=".7s" fill="freeze"/></rect>'+
+        '<text x="'+(w+6)+'" y="'+(y+33)+'" font-size="13" font-weight="800" fill="currentColor">'+esc(String(b[1]))+(s.unit||"")+'</text>';});
+      svg+='</svg>';h='<h2>'+md(s.h)+'</h2>'+svg;break;}
+    default:h='<h2>'+md(s.h||"")+'</h2>';
+  }
+  if(s.note)h+='<div class="note">'+md(s.note)+'</div>';
+  if(s.en)h+='<div class="en">'+md(s.en)+'</div>';
+  if(s.joke)h+='<div class="joke"><div class="av">👨‍💼</div><div class="bub"><b>Бахтиёр-ака</b>'+md(s.joke)+'</div></div>';
+  return h;
+}
+function slidesView(t){
+  const n=t.slides.length,last=S.si===n-1;
+  let h='<div class="slide" id="sl">'+slideHTML(t.slides[S.si])+'</div>';
+  h+='<div class="nav"><button class="btn" onclick="mv(-1)" '+(S.si===0?"disabled":"")+'>← Назад</button>'+
+     (last?'<button class="btn pri" onclick="setTab(\'quiz\')">К тесту →</button>':'<button class="btn pri" onclick="mv(1)">Далее →</button>')+'</div>';
+  h+='<div class="dots">'+t.slides.map((_,i)=>'<i class="'+(i===S.si?"on":"")+'"></i>').join("")+'</div><div class="cnt">Слайд '+(S.si+1)+' из '+n+' · листай свайпом</div>';
+  return h;
+}
+function mv(d){const n=T[S.ti].slides.length;S.si=Math.max(0,Math.min(n-1,S.si+d));render()}
+function setTab(x){S.tab=x;if(x==="quiz"&&S.checked===undefined)S.checked=false;render()}
+
+/* ===== QUIZ ===== */
+function quizView(t){
+  const qs=t.qs,answered=Object.keys(S.ans).length;
+  let h="";
+  if(S.checked){
+    let sc=0;qs.forEach((q,i)=>{if(S.ans[i]===q.a)sc++});
+    const pct=sc/qs.length;
+    const msg=sc>=13?["🏆","Блестяще! Экзаменатор плачет от счастья."]:sc>=10?["🎉","Тема сдана! Посмотри разбор ошибок."]:sc>=6?["💪","Неплохо, но надо повторить слайды."]:["📚","Вернись к слайдам — и потом ещё раз."];
+    const col=sc>=10?"#16a34a":sc>=6?"#d97706":"#dc2626";
+    h+='<div class="res">'+ring(pct,110,12,col,sc+"/"+qs.length)+'<h3>'+msg[0]+' '+sc+' из '+qs.length+'</h3><p>'+msg[1]+'</p>'+
+       '<div class="nav"><button class="btn" onclick="setTab(\'slides\')">Слайды</button><button class="btn pri" onclick="retry()">Пройти заново</button></div></div>';
+  }else{
+    h+='<div class="prog-line"><i style="width:'+(answered/qs.length*100)+'%"></i></div><div class="cnt" style="margin:-8px 0 10px">Отвечено '+answered+' из '+qs.length+'</div>';
+  }
+  qs.forEach((q,i)=>{
+    const a=S.ans[i];let cls="";
+    if(S.checked)cls=a===q.a?"right":"wrong";
+    h+='<div class="q '+cls+'"><div class="qn">Вопрос '+(i+1)+'</div><div class="qt">'+md(q.q)+'</div>';
+    ((S.perm&&S.perm[i])||q.o.map((_,k)=>k)).forEach((j,pos)=>{
+      const o=q.o[j];let oc="";
+      if(S.checked){if(j===q.a)oc="cor";else if(a===j)oc="inc"}
+      else if(a===j)oc="sel";
+      h+='<button class="opt '+oc+'" '+(S.checked?"disabled":"")+' onclick="pick('+i+','+j+')">'+String.fromCharCode(65+pos)+') '+md(o)+'</button>';
+    });
+    if(S.checked)h+='<div class="exp">'+(a===q.a?"✅ ":"❌ ")+md(q.e)+'</div>';
+    h+='</div>';
+  });
+  if(!S.checked)h+='<div class="qbar"><button class="btn pri" style="width:100%" onclick="check()">Проверить итог ('+answered+'/'+qs.length+')</button></div>';
+  return h;
+}
+function pick(i,j){if(S.checked)return;S.ans[i]=j;const y=window.scrollY;render();window.scrollTo(0,y)}
+function check(){
+  const t=T[S.ti],n=t.qs.length,answered=Object.keys(S.ans).length;
+  if(answered<n){let ok=true;try{ok=window.confirm("Отвечено "+answered+" из "+n+". Проверить всё равно?")}catch(e){}if(!ok)return}
+  S.checked=true;
+  let sc=0;t.qs.forEach((q,i)=>{if(S.ans[i]===q.a)sc++});
+  if(scores[t.id]==null||sc>scores[t.id]){scores[t.id]=sc;LS.set("f7_scores",scores)}
+  render();window.scrollTo(0,0);
+}
+function retry(){S.ans={};S.checked=false;S.perm=makePerm(T[S.ti]);render();window.scrollTo(0,0)}
+
+/* ===== RENDER ===== */
+function render(){
+  if(S.view==="home")return home();
+  const t=T[S.ti];
+  let h='<div class="wrap"><div class="top"><button class="back" onclick="goHome()">←</button><div class="tt"><small>'+t.i+' '+esc(t.n)+'</small>'+esc(t.name)+'</div></div>'+
+   '<div class="tabs"><button class="'+(S.tab==="slides"?"on":"")+'" onclick="setTab(\'slides\')">📖 Слайды</button><button class="'+(S.tab==="quiz"?"on":"")+'" onclick="setTab(\'quiz\')">📝 Тест (15)</button></div>';
+  h+=S.tab==="slides"?slidesView(t):quizView(t);
+  h+='</div>';
+  app.innerHTML=h;
+  if(S.tab==="slides")window.scrollTo(0,0);
+}
+/* swipe */
+let tx0=null,ty0=null;
+document.addEventListener("touchstart",e=>{if(S.view!=="topic"||S.tab!=="slides")return;tx0=e.touches[0].clientX;ty0=e.touches[0].clientY},{passive:true});
+document.addEventListener("touchend",e=>{if(tx0===null)return;const dx=e.changedTouches[0].clientX-tx0,dy=e.changedTouches[0].clientY-ty0;
+  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5)mv(dx<0?1:-1);tx0=null},{passive:true});
+document.addEventListener("keydown",e=>{if(S.view==="topic"&&S.tab==="slides"){if(e.key==="ArrowRight")mv(1);if(e.key==="ArrowLeft")mv(-1)}});
+render();
+</script>
 </body>
 </html>
