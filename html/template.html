@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Проверка счёт-фактур</title>
+<style>
+  :root {
+    --bg: #f4f6f9; --card: #ffffff; --text: #1d2433; --muted: #5d6779; --line: #dde2ea;
+    --accent: #1f6feb; --accent-h: #1858c4;
+    --ok-bg: #d7f2df; --ok-tx: #13612e;
+    --bad-bg: #fbd9dc; --bad-tx: #9b1c26;
+    --warn-bg: #fdf0c4; --warn-tx: #7a5600;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.45 "Segoe UI", system-ui, -apple-system, Arial, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 28px 16px 60px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+          padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .folder { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .folder-label { color: var(--muted); }
+  .folder-name { font-size: 20px; font-weight: 600; word-break: break-all; }
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  button { font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid transparent; }
+  .btn-big { background: var(--accent); color: #fff; font-size: 22px; font-weight: 600;
+             padding: 18px 44px; min-width: 260px; }
+  .btn-big:hover { background: var(--accent-h); }
+  .btn-sec { background: #fff; color: var(--accent); border-color: var(--accent);
+             font-size: 17px; padding: 12px 22px; }
+  .btn-sec:hover { background: #eef4ff; }
+  button:disabled { opacity: .55; cursor: default; }
+  .note { margin-top: 16px; padding: 12px 14px; border-radius: 10px; background: var(--warn-bg);
+          color: var(--warn-tx); }
+  .note.err { background: var(--bad-bg); color: var(--bad-tx); }
+  .progress { margin-top: 16px; color: var(--muted); font-size: 17px; }
+  .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .15s; }
+  .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stat { border-radius: 12px; padding: 14px 16px; background: #f0f2f6; }
+  .stat b { display: block; font-size: 30px; line-height: 1.1; }
+  .stat span { color: var(--muted); }
+  .stat.ok { background: var(--ok-bg); } .stat.ok b { color: var(--ok-tx); }
+  .stat.bad { background: var(--bad-bg); } .stat.bad b { color: var(--bad-tx); }
+  .stat.warn { background: var(--warn-bg); } .stat.warn b { color: var(--warn-tx); }
+  .res-head { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+              flex-wrap: wrap; margin-bottom: 14px; }
+  .res-head h2 { margin: 0; font-size: 22px; }
+  .meta { color: var(--muted); font-size: 14px; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #eef1f6; font-weight: 600; white-space: nowrap; }
+  td.num { color: var(--muted); width: 44px; }
+  td.mono { font-family: Consolas, "Cascadia Mono", monospace; }
+  tr.ok td { background: var(--ok-bg); }
+  tr.bad td { background: var(--bad-bg); }
+  tr.warn td { background: var(--warn-bg); }
+  .st { font-weight: 700; white-space: nowrap; }
+  tr.ok .st { color: var(--ok-tx); } tr.bad .st { color: var(--bad-tx); } tr.warn .st { color: var(--warn-tx); }
+  .cm { display: block; font-weight: 400; font-size: 13px; white-space: normal; margin-top: 2px; }
+  .hidden { display: none !important; }
+  footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 30px; }
+  @media (max-width: 640px) {
+    .summary { grid-template-columns: repeat(2, 1fr); }
+    .btn-big { width: 100%; min-width: 0; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Проверка счёт-фактур</h1>
+  <p class="sub">Номер счёт-фактуры внутри каждого PDF сравнивается с именем файла.
+     Файлы никуда не отправляются — всё работает только на этом компьютере.</p>
+
+  <section class="card">
+    <!-- Папка ещё не выбрана -->
+    <div id="view-empty" class="hidden">
+      <p style="margin-top:0">Выберите папку, в которой лежат PDF-файлы счёт-фактур.
+         Проверяются только PDF в самой папке, подпапки не учитываются.</p>
+      <div class="actions">
+        <button class="btn-big" id="btn-pick">Выбрать папку с фактурами</button>
+      </div>
+    </div>
+
+    <!-- Папка запомнена -->
+    <div id="view-ready" class="hidden">
+      <div class="folder">
+        <span class="folder-label">Папка:</span>
+        <span class="folder-name" id="folder-name"></span>
+      </div>
+      <div class="actions">
+        <button class="btn-big" id="btn-check">Проверить</button>
+        <button class="btn-sec" id="btn-change">Сменить папку</button>
+      </div>
+    </div>
+
+    <!-- Запасной вариант: выбор папки каждый раз -->
+    <input type="file" id="dir-input" webkitdirectory directory multiple class="hidden">
+
+    <div id="progress" class="progress hidden">
+      <span id="progress-text"></span>
+      <div class="bar"><div id="progress-bar"></div></div>
+    </div>
+    <div id="note" class="note hidden"></div>
+  </section>
+
+  <section class="card hidden" id="results">
+    <div class="res-head">
+      <div>
+        <h2>Результат проверки</h2>
+        <div class="meta" id="res-meta"></div>
+      </div>
+      <button class="btn-sec" id="btn-excel">Скачать отчёт Excel</button>
+    </div>
+    <div class="summary">
+      <div class="stat"><b id="s-total">0</b><span>всего файлов</span></div>
+      <div class="stat ok"><b id="s-ok">0</b><span>совпало</span></div>
+      <div class="stat bad"><b id="s-bad">0</b><span>не совпало</span></div>
+      <div class="stat warn"><b id="s-err">0</b><span>ошибки</span></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>№</th><th>Имя файла</th><th>Номер в шапке</th><th>Номер в заголовке</th><th>Статус</th></tr></thead>
+        <tbody id="res-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Работает офлайн. Встроены библиотеки pdf.js (Apache-2.0) и ExcelJS (MIT).</footer>
+</main>
+
+<!-- ===== Встроенные библиотеки ===== -->
+<script>/*__PDFJS__*/</script>
+<script>/*__EXCELJS__*/</script>
+<script type="text/plain" id="pdf-worker-src">/*__PDFJS_WORKER__*/</script>
+
+<!-- ===== Программа ===== -->
+<script>
+(function () {
+  "use strict";
+
+  // ---------- pdf.js: worker из встроенного текста через Blob URL ----------
+  // На file:// pdf.js считает адрес worker'а "чужим" и пытается обернуть его через
+  // importScripts, что не работает. Поэтому создаём Worker сами и передаём его готовым.
+  var workerText = document.getElementById("pdf-worker-src").textContent;
+  var workerUrl = URL.createObjectURL(new Blob([workerText], { type: "text/javascript" }));
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(workerUrl);
+  } catch (e) {
+    // если отдельный поток недоступен, pdf.js сам работает в основном потоке (медленнее)
+  }
+
+  // ---------- Логика проверки (как в check_invoices.py) ----------
+  var DATE = "\\d{2}\\.\\d{2}\\.\\d{4}";
+
+  // Шапка Didox: "Ҳисоб-фактура актсиз: 52 02.10.2026 дан"
+  var HEADER_PATTERNS = [
+    new RegExp("Ҳисоб-фактура[^:\\n]*:\\s*(\\S+)\\s+" + DATE + "\\s+дан"),
+    new RegExp("Hisob-faktura[^:\\n]*:\\s*(\\S+)\\s+" + DATE + "\\s+dan", "i"),
+    new RegExp("Сч[её]т-фактура[^:\\n]*:\\s*(\\S+)\\s+(?:от\\s+)?" + DATE, "i")
+  ];
+  // Заголовок документа: "02.10.2026 даги 52-сонли Ҳисобварақ-фактура"
+  // (между номером и словом "Ҳисобварақ" не должно быть другого "даги",
+  //  чтобы не перепутать с номером договора "6-сонли шартномага")
+  var HEADER_GAP = "(?:(?!даги|dagi)[\\s\\S]){0,80}?";
+  var BODY_PATTERNS = [
+    new RegExp(DATE + "\\s+даги\\s+(\\S+)-сонли" + HEADER_GAP + "Ҳисобварақ-фактура"),
+    new RegExp(DATE + "\\s+dagi\\s+(\\S+)-sonli" + HEADER_GAP + "Hisobvaraq-faktura", "i"),
+    new RegExp("Сч[её]т-фактура\\s*№\\s*(\\S+)\\s+от\\s+" + DATE, "i")
+  ];
+
+  var ST = {
+    OK:    { text: "OK",              cls: "ok",   group: 3 },
+    BAD:   { text: "НЕ СОВПАДАЕТ",    cls: "bad",  group: 0 },
+    NONUM: { text: "НОМЕР НЕ НАЙДЕН", cls: "warn", group: 1 },
+    ERR:   { text: "ОШИБКА ЧТЕНИЯ",   cls: "warn", group: 2 }
+  };
+
+  function normalize(n) { return String(n).trim().toUpperCase().replace(/\//g, "."); }
+
+  function findFirst(patterns, text) {
+    for (var i = 0; i < patterns.length; i++) {
+      var m = patterns[i].exec(text);
+      if (m) return m[1];
+    }
+    return null;
+  }
+
+  function fileStem(name) { return name.replace(/\.pdf$/i, ""); }
+
+  // Собирает строки текста страницы по координатам (pdf.js дробит слова на куски)
+  function buildText(items) {
+    var its = [];
+    for (var i = 0; i < items.length; i++) {
+      var t = items[i];
+      if (!t.str) continue;
+      its.push({ s: t.str, x: t.transform[4], y: t.transform[5], w: t.width,
+                 h: Math.abs(t.transform[3]) || Math.abs(t.height) || 10 });
+    }
+    its.sort(function (a, b) { return (b.y - a.y) || (a.x - b.x); });
+    var lines = [];
+    its.forEach(function (it) {
+      var ln = null;
+      for (var j = 0; j < lines.length; j++) {
+        if (Math.abs(lines[j].y - it.y) <= Math.max(2, it.h * 0.35)) { ln = lines[j]; break; }
+      }
+      if (!ln) { ln = { y: it.y, items: [] }; lines.push(ln); }
+      ln.items.push(it);
+    });
+    lines.sort(function (a, b) { return b.y - a.y; });
+    return lines.map(function (l) {
+      l.items.sort(function (a, b) { return a.x - b.x; });
+      var out = "", end = null;
+      l.items.forEach(function (it) {
+        if (end !== null && it.x - end > it.h * 0.25 && !/\s$/.test(out) && !/^\s/.test(it.s)) out += " ";
+        out += it.s;
+        end = it.x + it.w;
+      });
+      return out.replace(/\s+/g, " ").trim();
+    }).join("\n");
+  }
+
+  function readErrorText(e) {
+    var n = e && e.name;
+    if (n === "InvalidPDFException") return "Файл повреждён или это не PDF";
+    if (n === "PasswordException") return "PDF защищён паролем";
+    if (n === "MissingPDFException") return "Файл не найден";
+    if (n === "NotAllowedError" || n === "NotReadableError") return "Нет доступа к файлу (возможно, открыт в другой программе)";
+    if (n === "NotFoundError") return "папка или файл не найдены";
+    if (n === "SecurityError") return "браузер запретил доступ";
+    return (e && e.message) ? e.message : String(e);
+  }
+
+  async function checkOne(name, getBuffer) {
+    var row = { file: name, fileNumber: fileStem(name), header: "", body: "", status: null, comment: "" };
+    var doc = null, text;
+    try {
+      var buf = await getBuffer();
+      if (!buf || buf.byteLength === 0) throw { name: "InvalidPDFException" };
+      doc = await pdfjsLib.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise;
+      var page = await doc.getPage(1);          // номер всегда на первой странице
+      var tc = await page.getTextContent();
+      text = buildText(tc.items);
+    } catch (e) {
+      row.status = ST.ERR; row.comment = readErrorText(e);
+      return row;
+    } finally {
+      if (doc) { try { doc.destroy(); } catch (_) {} }
+    }
+
+    return classify(row, text);
+  }
+
+  // Сравнение номеров из текста PDF с именем файла
+  function classify(row, text) {
+    var h = findFirst(HEADER_PATTERNS, text), b = findFirst(BODY_PATTERNS, text);
+    row.header = h || ""; row.body = b || "";
+    if (!h && !b) {
+      row.status = ST.NONUM;
+      row.comment = text.trim() ? "Номер счёт-фактуры не найден в тексте PDF"
+                                : "В PDF нет текста (возможно, это скан)";
+      return row;
+    }
+    var fileN = normalize(row.fileNumber);
+    var notes = [];
+    var bad = false;
+    if (h && b && normalize(h) !== normalize(b)) {
+      bad = true;
+      notes.push("Номер в шапке (" + h + ") и в заголовке (" + b + ") разный");
+    }
+    var found = [h, b].filter(Boolean);
+    var matchAll = found.every(function (n) { return normalize(n) === fileN; });
+    if (!matchAll) {
+      bad = true;
+      var others = found.filter(function (n) { return normalize(n) !== fileN; });
+      notes.unshift("Файл назван «" + row.fileNumber + "», а в фактуре номер " + others[0]);
+    }
+    if (!h) notes.push("номер найден только в заголовке");
+    if (!b) notes.push("номер найден только в шапке");
+    row.status = bad ? ST.BAD : ST.OK;
+    row.comment = notes.join("; ");
+    return row;
+  }
+
+  function sortRows(rows) {
+    return rows.slice().sort(function (a, b) {
+      return (a.status.group - b.status.group) ||
+             a.file.localeCompare(b.file, "ru", { numeric: true, sensitivity: "base" });
+    });
+  }
+
+  // ---------- Запоминание папки (IndexedDB) ----------
+  var DB_NAME = "proverka-faktur", STORE = "kv", KEY = "folder";
+
+  function idbOpen() {
+    return new Promise(function (res, rej) {
+      if (!window.indexedDB) return rej(new Error("IndexedDB недоступен"));
+      var r = indexedDB.open(DB_NAME, 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore(STORE); };
+      r.onsuccess = function () { res(r.result); };
+      r.onerror = function () { rej(r.error); };
+    });
+  }
+  async function idbGet(key) {
+    var db = await idbOpen();
+    return new Promise(function (res, rej) {
+      var r = db.transaction(STORE, "readonly").objectStore(STORE).get(key);
+      r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); };
+    });
+  }
+  async function idbSet(key, val) {
+    var db = await idbOpen();
+    return new Promise(function (res, rej) {
+      var tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).put(val, key);
+      tx.oncomplete = function () { res(); }; tx.onerror = function () { rej(tx.error); };
+      tx.onabort = function () { rej(tx.error); };
+    });
+  }
+
+  // ---------- Интерфейс ----------
+  var $ = function (id) { return document.getElementById(id); };
+  var hasPicker = typeof window.showDirectoryPicker === "function";
+  var dirHandle = null;     // FileSystemDirectoryHandle (основной режим)
+  var fallbackMode = !hasPicker;
+  var lastRows = null, lastFolder = "", lastDate = null;
+  var busy = false;
+
+  function show(id, on) { $(id).classList.toggle("hidden", !on); }
+  function note(msg, isErr) {
+    var n = $("note");
+    if (!msg) { show("note", false); return; }
+    n.textContent = msg; n.classList.toggle("err", !!isErr); show("note", true);
+  }
+  function setBusy(on) {
+    busy = on;
+    ["btn-pick", "btn-check", "btn-change", "btn-excel"].forEach(function (id) { $(id).disabled = on; });
+  }
+  function progress(done, total) {
+    show("progress", true);
+    $("progress-text").textContent = "Проверено " + done + " из " + total + "…";
+    $("progress-bar").style.width = (total ? Math.round(done * 100 / total) : 0) + "%";
+  }
+
+  function showFolder(name) {
+    $("folder-name").textContent = name;
+    show("view-empty", false); show("view-ready", true);
+  }
+  function showEmpty() { show("view-ready", false); show("view-empty", true); }
+
+  async function init() {
+    if (fallbackMode) {
+      showEmpty();
+      note("Этот браузер не умеет запоминать папку — выбирайте её при каждом запуске. " +
+           "Лучше открывать программу в Microsoft Edge или Google Chrome.");
+      return;
+    }
+    try {
+      var h = await idbGet(KEY);
+      if (h && h.kind === "directory") { dirHandle = h; showFolder(h.name); return; }
+    } catch (e) { /* хранилище недоступно — просто выберем папку */ }
+    showEmpty();
+  }
+
+  async function pickFolder() {
+    if (fallbackMode) { $("dir-input").value = ""; $("dir-input").click(); return; }
+    var h;
+    try {
+      h = await window.showDirectoryPicker({ id: "faktury", mode: "read" });
+    } catch (e) {
+      if (e && e.name === "AbortError") return;        // пользователь закрыл окно
+      // выбор через API не сработал — переходим на запасной вариант
+      fallbackMode = true;
+      note("Не удалось открыть выбор папки (" + readErrorText(e) + "). Выберите папку ещё раз — " +
+           "в этом режиме её придётся выбирать при каждом запуске.");
+      showEmpty();
+      return;
+    }
+    dirHandle = h;
+    showFolder(h.name);
+    try {
+      await idbSet(KEY, h);
+      note("");
+    } catch (e) {
+      note("Папку запомнить не удалось (" + readErrorText(e) + "). " +
+           "Проверка работает, но при следующем запуске папку нужно будет выбрать снова.");
+    }
+    await runCheckHandle();
+  }
+
+  async function ensurePermission(h) {
+    var opts = { mode: "read" };
+    if (h.queryPermission && (await h.queryPermission(opts)) === "granted") return true;
+    if (h.requestPermission && (await h.requestPermission(opts)) === "granted") return true;
+    return false;
+  }
+
+  async function runCheckHandle() {
+    if (busy || !dirHandle) return;
+    note("");
+    var ok;
+    try { ok = await ensurePermission(dirHandle); }
+    catch (e) { ok = false; }
+    if (!ok) {
+      note("Нет разрешения на чтение папки «" + dirHandle.name + "». Нажмите «Проверить» ещё раз " +
+           "и разрешите доступ, или выберите папку заново.", true);
+      return;
+    }
+    var files = [];
+    try {
+      for await (var entry of dirHandle.values()) {
+        // только файлы в самой папке; подпапки пропускаются
+        if (entry.kind === "file" && /\.pdf$/i.test(entry.name)) files.push(entry);
+      }
+    } catch (e) {
+      note("Не удалось открыть папку «" + dirHandle.name + "»: " + readErrorText(e) +
+           ". Возможно, её переместили или переименовали — выберите папку заново.", true);
+      return;
+    }
+    await runCheck(dirHandle.name, files.map(function (fh) {
+      return { name: fh.name, get: function () { return fh.getFile().then(function (f) { return f.arrayBuffer(); }); } };
+    }));
+  }
+
+  async function runCheckFallback(fileList) {
+    var all = Array.prototype.slice.call(fileList);
+    if (!all.length) return;
+    var folder = (all[0].webkitRelativePath || "").split("/")[0] || "выбранная папка";
+    // только файлы прямо в выбранной папке: "Папка/файл.pdf" (без подпапок)
+    var files = all.filter(function (f) {
+      var parts = (f.webkitRelativePath || f.name).split("/");
+      return parts.length <= 2 && /\.pdf$/i.test(f.name);
+    });
+    showFolder(folder);
+    $("btn-check").textContent = "Выбрать папку и проверить";
+    await runCheck(folder, files.map(function (f) {
+      return { name: f.name, get: function () { return f.arrayBuffer(); } };
+    }));
+  }
+
+  async function runCheck(folderName, files) {
+    setBusy(true);
+    show("results", false);
+    try {
+      if (!files.length) {
+        note("В папке «" + folderName + "» нет PDF-файлов.", true);
+        return;
+      }
+      var rows = [];
+      progress(0, files.length);
+      for (var i = 0; i < files.length; i++) {
+        rows.push(await checkOne(files[i].name, files[i].get));
+        progress(i + 1, files.length);
+      }
+      lastRows = sortRows(rows); lastFolder = folderName; lastDate = new Date();
+      render();
+    } finally {
+      show("progress", false);
+      setBusy(false);
+    }
+  }
+
+  function counts(rows) {
+    var c = { total: rows.length, ok: 0, bad: 0, err: 0 };
+    rows.forEach(function (r) {
+      if (r.status === ST.OK) c.ok++; else if (r.status === ST.BAD) c.bad++; else c.err++;
+    });
+    return c;
+  }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function fmtDate(d) { return pad(d.getDate()) + "." + pad(d.getMonth() + 1) + "." + d.getFullYear(); }
+  function fmtDateTime(d) { return fmtDate(d) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+
+  function render() {
+    var c = counts(lastRows);
+    $("s-total").textContent = c.total; $("s-ok").textContent = c.ok;
+    $("s-bad").textContent = c.bad;     $("s-err").textContent = c.err;
+    $("res-meta").textContent = "Папка: " + lastFolder + " · " + fmtDateTime(lastDate);
+    var tb = $("res-body");
+    tb.textContent = "";
+    lastRows.forEach(function (r, i) {
+      var tr = document.createElement("tr");
+      tr.className = r.status.cls;
+      [String(i + 1), r.file, r.header || "—", r.body || "—"].forEach(function (v, k) {
+        var td = document.createElement("td");
+        td.textContent = v;
+        if (k === 0) td.className = "num";
+        if (k === 2 || k === 3) td.className = "mono";
+        tr.appendChild(td);
+      });
+      var st = document.createElement("td");
+      st.className = "st";
+      st.textContent = r.status.text;
+      if (r.comment) {
+        var cm = document.createElement("span");
+        cm.className = "cm"; cm.textContent = r.comment;
+        st.appendChild(cm);
+      }
+      tr.appendChild(st);
+      tb.appendChild(tr);
+    });
+    show("results", true);
+    $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // ---------- Отчёт Excel ----------
+  var XL = {
+    ok:   { fill: "FFC6EFCE", font: "FF13612E" },
+    bad:  { fill: "FFFFC7CE", font: "FF9C0006" },
+    warn: { fill: "FFFFEB9C", font: "FF7A5600" }
+  };
+
+  async function downloadExcel() {
+    if (!lastRows) return;
+    setBusy(true);
+    try {
+      var wb = new ExcelJS.Workbook();
+      wb.created = lastDate;
+      var ws = wb.addWorksheet("Проверка", { views: [{ state: "frozen", ySplit: 6 }] });
+      ws.columns = [{ width: 6 }, { width: 22 }, { width: 18 }, { width: 20 }, { width: 20 }, { width: 60 }];
+      var c = counts(lastRows);
+
+      ws.getCell("A1").value = "Отчёт проверки счёт-фактур";
+      ws.getCell("A1").font = { bold: true, size: 14 };
+      ws.getCell("A2").value = "Дата проверки: " + fmtDateTime(lastDate);
+      ws.getCell("A3").value = "Папка: " + lastFolder;
+      ws.getCell("A4").value = "Всего: " + c.total + "   Совпало: " + c.ok +
+                               "   Не совпало: " + c.bad + "   Ошибки: " + c.err;
+      ws.getCell("A4").font = { bold: true };
+
+      var head = ws.getRow(6);
+      head.values = ["№", "Файл", "Номер в шапке", "Номер в заголовке", "Статус", "Комментарий"];
+      head.eachCell(function (cell) {
+        cell.font = { bold: true };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE7EBF2" } };
+        cell.border = { bottom: { style: "thin", color: { argb: "FF9AA3B2" } } };
+      });
+      ws.autoFilter = "A6:F6";
+
+      lastRows.forEach(function (r, i) {
+        var row = ws.addRow([i + 1, r.file, r.header, r.body, r.status.text, r.comment]);
+        var col = XL[r.status.cls];
+        row.eachCell({ includeEmpty: true }, function (cell, n) {
+          if (n > 6) return;
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: col.fill } };
+          cell.border = { bottom: { style: "hair", color: { argb: "FFBFC5CF" } } };
+          cell.alignment = { vertical: "top", wrapText: n === 6 };
+        });
+        row.getCell(5).font = { bold: true, color: { argb: col.font } };
+        // номера храним как текст, чтобы Excel не превратил "543/2" в дату
+        row.getCell(3).numFmt = "@"; row.getCell(4).numFmt = "@";
+      });
+
+      var buf = await wb.xlsx.writeBuffer();
+      var blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "отчет_проверки_" + fmtDate(lastDate) + ".xlsx";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
+    } catch (e) {
+      note("Не удалось создать отчёт Excel: " + readErrorText(e), true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ---------- Кнопки ----------
+  $("btn-pick").addEventListener("click", pickFolder);
+  $("btn-change").addEventListener("click", pickFolder);
+  $("btn-check").addEventListener("click", function () {
+    if (fallbackMode) { $("dir-input").value = ""; $("dir-input").click(); }
+    else runCheckHandle();
+  });
+  $("dir-input").addEventListener("change", function (e) { runCheckFallback(e.target.files); });
+  $("btn-excel").addEventListener("click", downloadExcel);
+
+  // для автотестов
+  window.__proverka = {
+    checkOne: checkOne, buildText: buildText, normalize: normalize,
+    classifyText: function (fileName, text) {
+      var r = classify({ file: fileName, fileNumber: fileStem(fileName), header: "", body: "", status: null, comment: "" }, text);
+      return [r.header, r.body, r.status.text, r.comment];
+    }
+  };
+
+  init();
+})();
+</script>
+</body>
+</html>

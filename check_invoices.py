@@ -100,12 +100,15 @@ def check_file(pdf_path: Path) -> dict:
     if header_num and body_num and normalize(header_num) != normalize(body_num):
         comments.append(f"В шапке номер {header_num}, в документе {body_num}")
 
-    found = {normalize(n) for n in (header_num, body_num) if n}
-    if normalize(file_number) in found:
+    # Совпадение — только если ВСЕ найденные номера равны имени файла
+    # (если в шапке и заголовке номера разные — это тоже ошибка)
+    others = [n for n in (header_num, body_num) if n and normalize(n) != normalize(file_number)]
+    if not others and not comments:
         row["status"] = STATUS_OK
     else:
         row["status"] = STATUS_MISMATCH
-        comments.insert(0, f"Файл назван {file_number}, а в фактуре номер {pdf_number}")
+        if others:
+            comments.insert(0, f"Файл назван {file_number}, а в фактуре номер {others[0]}")
     row["comment"] = "; ".join(comments)
     return row
 
