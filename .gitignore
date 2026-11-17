@@ -3,3 +3,11 @@ __pycache__/
 *.xlsx
 !proverka_faktur.html
 отчет_*.html
+
+# Android / Gradle
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
