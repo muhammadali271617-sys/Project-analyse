@@ -7,7 +7,7 @@
 <style>
   :root {
     --space: #04050d; --text: #e9ecff; --muted: #9aa3c7; --line: rgba(160, 150, 255, .18);
-    --glass: rgba(18, 20, 48, .55); --glass-2: rgba(255, 255, 255, .04);
+    --glass: rgba(10, 12, 32, .5); --glass-2: rgba(255, 255, 255, .04);
     --violet: #8b5cf6; --blue: #3b82f6; --cyan: #22d3ee; --pink: #ec4899;
     --ok: #34d399; --ok-bg: rgba(52, 211, 153, .12);
     --bad: #fb7185; --bad-bg: rgba(251, 113, 133, .14);
@@ -24,6 +24,9 @@
            var(--space);
          background-attachment: fixed; }
   #stars { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+  body::after { content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+                background: linear-gradient(90deg, rgba(3,4,12,.55) 0%, rgba(3,4,12,.25) 45%, rgba(3,4,12,0) 75%),
+                            radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.55) 100%); }
   main { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 36px 16px 60px; }
 
   .title { display: flex; align-items: center; gap: 16px; margin-bottom: 6px; }
@@ -31,10 +34,10 @@
   h1 { font-size: 34px; margin: 0; letter-spacing: .5px;
        background: linear-gradient(90deg, #a5f3fc, #c4b5fd 45%, #f9a8d4);
        -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .sub { color: var(--muted); margin: 0 0 28px; }
+  .sub { color: #c3c9e8; margin: 0 0 28px; text-shadow: 0 1px 8px rgba(0,0,0,.9); }
 
   .card { background: var(--glass); border: 1px solid var(--line); border-radius: 18px;
-          padding: 26px; margin-bottom: 22px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+          padding: 26px; margin-bottom: 22px; backdrop-filter: blur(6px) saturate(140%); -webkit-backdrop-filter: blur(6px) saturate(140%);
           box-shadow: 0 0 0 1px rgba(255,255,255,.02) inset, 0 20px 60px rgba(0, 0, 0, .45),
                       0 0 40px rgba(139, 92, 246, .10); }
   .folder { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
@@ -99,7 +102,7 @@
   tr.ok .st { color: var(--ok); } tr.bad .st { color: var(--bad); } tr.warn .st { color: var(--warn); }
   .cm { display: block; font-weight: 400; font-size: 13px; white-space: normal; margin-top: 2px; color: #cbd2f0; }
   .hidden { display: none !important; }
-  footer { position: relative; z-index: 1; color: #6f78a0; font-size: 13px; text-align: center; margin-top: 30px; }
+  footer { position: relative; z-index: 1; color: #aab2d6; text-shadow: 0 1px 6px rgba(0,0,0,.95); font-size: 13px; text-align: center; margin-top: 30px; }
   @media (max-width: 640px) {
     .summary { grid-template-columns: repeat(2, 1fr); }
     .btn-big { width: 100%; min-width: 0; }
@@ -641,48 +644,194 @@
     }
   };
 
-  // ---------- Звёздное небо (рисуется локально, без интернета) ----------
-  (function stars() {
+  // ---------- Галактика (рисуется локально на canvas, без интернета) ----------
+  (function galaxy() {
     var cv = $("stars"), ctx = cv.getContext("2d");
     var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-    var W, H, dpr, list = [], shoot = null;
+    var W, H, dpr, bg, gal, galSize, layers, shoots = [], t0 = performance.now();
+    var mx = 0, my = 0, px = 0, py = 0;            // параллакс от мыши
+
+    function rnd(a, b) { return a + Math.random() * (b - a); }
+    function gauss() { return (Math.random() + Math.random() + Math.random() + Math.random() - 2) / 2; }
+    function mk(w, h) { var c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
+
+    // 1) Спиральная галактика — рисуется один раз в отдельный холст
+    function buildGalaxy() {
+      galSize = 1400;
+      gal = mk(galSize, galSize);
+      var g = gal.getContext("2d"), c = galSize / 2, R = galSize * 0.46;
+      g.globalCompositeOperation = "lighter";
+      // мягкий диск
+      var disk = g.createRadialGradient(c, c, 0, c, c, R);
+      disk.addColorStop(0, "rgba(255,200,170,.35)"); disk.addColorStop(.25, "rgba(190,120,255,.16)");
+      disk.addColorStop(.6, "rgba(80,120,255,.07)"); disk.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = disk; g.beginPath(); g.arc(c, c, R, 0, 6.283); g.fill();
+      // звёзды рукавов
+      var ARMS = 2, N = 30000, WIND = 1.55;
+      for (var i = 0; i < N; i++) {
+        var arm = i % ARMS;
+        var d = Math.pow(Math.random(), 1.6);                 // ближе к центру — плотнее
+        var r = d * R;
+        var spread = 0.55 + 0.6 * (1 - d);
+        var ang = arm * 6.283 / ARMS + d * WIND * 3.1416 + gauss() * spread * (Math.random() < .25 ? 1.8 : .45);
+        var off = gauss() * R * 0.07 * (1.3 - d);
+        var x = c + Math.cos(ang) * r + Math.cos(ang + 1.57) * off;
+        var y = c + Math.sin(ang) * r + Math.sin(ang + 1.57) * off;
+        var col;
+        if (d < .12)      col = [255, 225, 190];
+        else if (d < .35) col = Math.random() < .5 ? [255, 170, 220] : [210, 160, 255];
+        else if (d < .7)  col = Math.random() < .6 ? [150, 140, 255] : [120, 190, 255];
+        else              col = Math.random() < .7 ? [110, 210, 255] : [200, 170, 255];
+        var size = Math.random() < .02 ? rnd(1.6, 2.6) : rnd(.4, 1.2);
+        var al = rnd(.25, .85) * (1 - d * .5);
+        g.fillStyle = "rgba(" + col[0] + "," + col[1] + "," + col[2] + "," + al.toFixed(2) + ")";
+        g.beginPath(); g.arc(x, y, size, 0, 6.283); g.fill();
+      }
+      // светящиеся облака газа вдоль рукавов
+      for (var k = 0; k < 240; k++) {
+        var arm2 = k % ARMS, d2 = rnd(.15, .9), r2 = d2 * R;
+        var a2 = arm2 * 6.283 / ARMS + d2 * WIND * 3.1416 + gauss() * .4;
+        var x2 = c + Math.cos(a2) * r2, y2 = c + Math.sin(a2) * r2, rr = rnd(14, 46) * (1.2 - d2);
+        var hue = Math.random() < .5 ? "236,72,153" : (Math.random() < .5 ? "139,92,246" : "34,211,238");
+        var cg = g.createRadialGradient(x2, y2, 0, x2, y2, rr);
+        cg.addColorStop(0, "rgba(" + hue + ",.16)"); cg.addColorStop(1, "rgba(" + hue + ",0)");
+        g.fillStyle = cg; g.beginPath(); g.arc(x2, y2, rr, 0, 6.283); g.fill();
+      }
+      // яркое ядро
+      var core = g.createRadialGradient(c, c, 0, c, c, R * .22);
+      core.addColorStop(0, "rgba(255,255,255,1)"); core.addColorStop(.12, "rgba(255,240,215,.9)");
+      core.addColorStop(.4, "rgba(255,170,120,.35)"); core.addColorStop(1, "rgba(255,120,200,0)");
+      g.fillStyle = core; g.beginPath(); g.arc(c, c, R * .22, 0, 6.283); g.fill();
+    }
+
+    // 2) Фон: глубокий космос + туманности + далёкая пыль (перерисовывается только при изменении размера)
+    function buildBackground() {
+      bg = mk(cv.width, cv.height);
+      var g = bg.getContext("2d");
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var base = g.createLinearGradient(0, 0, W, H);
+      base.addColorStop(0, "#070417"); base.addColorStop(.5, "#04050d"); base.addColorStop(1, "#020814");
+      g.fillStyle = base; g.fillRect(0, 0, W, H);
+      g.globalCompositeOperation = "screen";
+      var neb = [
+        [.08, .12, .55, "124,58,237", .45], [.92, .08, .45, "236,72,153", .35],
+        [.85, .85, .6, "37,99,235", .40],   [.15, .9, .45, "14,165,233", .28],
+        [.5, .55, .35, "192,38,211", .18],  [.35, .3, .3, "56,189,248", .12]
+      ];
+      neb.forEach(function (n) {
+        // туманность из нескольких «клубов» — выглядит неровно и живо
+        for (var j = 0; j < 7; j++) {
+          var x = (n[0] + gauss() * .12) * W, y = (n[1] + gauss() * .12) * H;
+          var r = n[2] * Math.max(W, H) * rnd(.35, .8);
+          var gr = g.createRadialGradient(x, y, 0, x, y, r);
+          gr.addColorStop(0, "rgba(" + n[3] + "," + (n[4] * rnd(.25, .5)).toFixed(2) + ")");
+          gr.addColorStop(.5, "rgba(" + n[3] + "," + (n[4] * .12).toFixed(2) + ")");
+          gr.addColorStop(1, "rgba(" + n[3] + ",0)");
+          g.fillStyle = gr; g.fillRect(0, 0, W, H);
+        }
+      });
+      // млечная пыль
+      g.globalCompositeOperation = "lighter";
+      for (var i = 0, n2 = Math.round(W * H / 900); i < n2; i++) {
+        g.fillStyle = "rgba(255,255,255," + rnd(.03, .18).toFixed(2) + ")";
+        g.fillRect(Math.random() * W, Math.random() * H, 1, 1);
+      }
+    }
+
+    // 3) Три слоя мерцающих звёзд (разная глубина — разный параллакс)
+    function buildStars() {
+      layers = [ { k: 4, list: [] }, { k: 10, list: [] }, { k: 20, list: [] } ];
+      var total = Math.round(W * H / 3800);
+      for (var i = 0; i < total; i++) {
+        var L = layers[i % 10 < 6 ? 0 : i % 10 < 9 ? 1 : 2];
+        var c = Math.random();
+        L.list.push({ x: Math.random() * W, y: Math.random() * H,
+          r: (L === layers[2] ? rnd(1.1, 2) : L === layers[1] ? rnd(.7, 1.3) : rnd(.3, .8)),
+          a: Math.random() * 6.283, s: rnd(.004, .025),
+          col: c < .65 ? "255,255,255" : c < .8 ? "165,243,252" : c < .92 ? "240,171,252" : "253,224,171" });
+      }
+    }
+
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       W = innerWidth; H = innerHeight;
-      cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      var n = Math.round(W * H / 5000);
-      list = [];
-      for (var i = 0; i < n; i++) {
-        var c = Math.random();
-        list.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.3 + .2,
-                    a: Math.random() * Math.PI * 2, s: Math.random() * .02 + .004,
-                    col: c < .7 ? "255,255,255" : c < .85 ? "165,243,252" : "240,171,252" });
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      buildBackground(); buildStars();
+    }
+
+    function drawStar(st, ox, oy) {
+      st.a += st.s;
+      var o = .3 + .7 * Math.abs(Math.sin(st.a));
+      var x = (st.x + ox + W) % W, y = (st.y + oy + H) % H;
+      ctx.fillStyle = "rgba(" + st.col + "," + o.toFixed(2) + ")";
+      ctx.beginPath(); ctx.arc(x, y, st.r, 0, 6.283); ctx.fill();
+      if (st.r > 1.4 && o > .85) {           // лучики у самых ярких
+        ctx.strokeStyle = "rgba(" + st.col + "," + ((o - .85) * 3).toFixed(2) + ")";
+        ctx.lineWidth = .6; ctx.beginPath();
+        ctx.moveTo(x - st.r * 4, y); ctx.lineTo(x + st.r * 4, y);
+        ctx.moveTo(x, y - st.r * 4); ctx.lineTo(x, y + st.r * 4); ctx.stroke();
       }
     }
-    function frame() {
-      ctx.clearRect(0, 0, W, H);
-      for (var i = 0; i < list.length; i++) {
-        var st = list[i]; st.a += st.s;
-        var o = .35 + .65 * Math.abs(Math.sin(st.a));
-        ctx.fillStyle = "rgba(" + st.col + "," + o.toFixed(2) + ")";
-        ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, 6.283); ctx.fill();
+
+    function frame(now) {
+      var t = (now - t0) / 1000;
+      px += (mx - px) * .04; py += (my - py) * .04;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(bg, 0, 0);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // галактика: наклонённый диск, медленно вращается и «дышит»
+      var size = Math.max(W, H) * 1.05;
+      var gx = W * .66 + px * 18, gy = H * .46 + py * 18;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.translate(gx, gy);
+      ctx.rotate(-.42);
+      ctx.scale(1, .42);
+      ctx.rotate(t * .025);
+      ctx.globalAlpha = 1;
+      ctx.drawImage(gal, -size / 2, -size / 2, size, size);
+      ctx.restore();
+      // пульсирующее сияние ядра
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      var pr = size * (.09 + .01 * Math.sin(t * 1.3));
+      var halo = ctx.createRadialGradient(gx, gy, 0, gx, gy, pr);
+      halo.addColorStop(0, "rgba(255,240,220,.55)"); halo.addColorStop(.35, "rgba(255,160,210,.18)");
+      halo.addColorStop(1, "rgba(139,92,246,0)");
+      ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(gx, gy, pr, 0, 6.283); ctx.fill();
+      ctx.restore();
+
+      // звёзды
+      layers.forEach(function (L) {
+        var ox = -px * L.k, oy = -py * L.k;
+        for (var i = 0; i < L.list.length; i++) drawStar(L.list[i], ox, oy);
+      });
+
+      // падающие звёзды
+      if (shoots.length < 2 && Math.random() < .006) {
+        shoots.push({ x: rnd(W * .3, W * 1.1), y: rnd(-40, H * .45), v: rnd(9, 16), l: 0, len: rnd(120, 260) });
       }
-      if (!shoot && Math.random() < .004) {
-        shoot = { x: Math.random() * W * .7 + W * .2, y: Math.random() * H * .4, l: 0 };
-      }
-      if (shoot) {
-        shoot.l += 14;
-        var tx = shoot.x - shoot.l, ty = shoot.y + shoot.l * .45;
-        var g = ctx.createLinearGradient(tx, ty, tx + 120, ty - 54);
-        g.addColorStop(0, "rgba(255,255,255,.9)"); g.addColorStop(1, "rgba(165,243,252,0)");
-        ctx.strokeStyle = g; ctx.lineWidth = 1.6;
-        ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + 120, ty - 54); ctx.stroke();
-        if (shoot.l > 700) shoot = null;
-      }
+      shoots = shoots.filter(function (s) {
+        s.l += s.v;
+        var hx = s.x - s.l, hy = s.y + s.l * .5;
+        var tx = hx + s.len, ty = hy - s.len * .5;
+        var g = ctx.createLinearGradient(hx, hy, tx, ty);
+        g.addColorStop(0, "rgba(255,255,255,.95)"); g.addColorStop(.3, "rgba(165,243,252,.5)");
+        g.addColorStop(1, "rgba(139,92,246,0)");
+        ctx.strokeStyle = g; ctx.lineWidth = 1.8; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(tx, ty); ctx.stroke();
+        ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.beginPath(); ctx.arc(hx, hy, 1.6, 0, 6.283); ctx.fill();
+        return hx > -300 && hy < H + 300;
+      });
+
       if (!reduce) requestAnimationFrame(frame);
     }
-    resize(); addEventListener("resize", function () { resize(); if (reduce) frame(); });
-    frame();
+
+    addEventListener("mousemove", function (e) { mx = e.clientX / W - .5; my = e.clientY / H - .5; });
+    addEventListener("resize", function () { resize(); if (reduce) frame(performance.now()); });
+    buildGalaxy(); resize();
+    requestAnimationFrame(frame);
   })();
 
   init();
