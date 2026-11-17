@@ -332,7 +332,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return null;
   }
 
-  function fileStem(name) { return name.replace(/\.pdf$/i, ""); }
+  // Номер из имени файла. Текст в скобках игнорируется:
+  // "543 (Next Glass).pdf" → "543", "52 (1).pdf" → "52"
+  function fileStem(name) {
+    return name.replace(/\.pdf$/i, "").replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
+  }
 
   // Собирает строки текста страницы по координатам (pdf.js дробит слова на куски)
   function buildText(items) {

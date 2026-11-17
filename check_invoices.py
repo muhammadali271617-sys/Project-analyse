@@ -73,8 +73,14 @@ def read_invoice_number(pdf_path: Path):
     return find_first(HEADER_PATTERNS, text), find_first(BODY_PATTERNS, text)
 
 
+def file_number_from_name(stem: str) -> str:
+    """Номер из имени файла. Текст в скобках игнорируется:
+    "543 (Next Glass)" → "543", "52 (1)" → "52"."""
+    return re.sub(r"\s+", " ", re.sub(r"\([^)]*\)", "", stem)).strip()
+
+
 def check_file(pdf_path: Path) -> dict:
-    file_number = pdf_path.stem
+    file_number = file_number_from_name(pdf_path.stem)
     row = {
         "file": pdf_path.name,
         "file_number": file_number,
