@@ -124,7 +124,7 @@ def tokens(name):
         elif re.search(r"[0-9]", t):
             out[t] = 2.0                      # артикулы типа RST-534A
         elif len(t) >= 3:
-            out[t[:5]] = 1.0                  # грубая основа слова (окончания отбрасываются)
+            out[t[:4]] = 1.0                  # основа слова: первые 4 буквы (стрейч = стретч)
     return out
 
 
@@ -388,6 +388,19 @@ def match_row(row, inv):
                                    f"перепутаны строки.")
     hard = res["flags"] & {"qty", "price", "sum", "vat"}
     if hard:
+        # чьи это числа? ищем другую позицию с той же суммой или ценой
+        for o in items:
+            if o is it:
+                continue
+            if eq(J, o["sum"], TOL_SUM) or eq(J, o["total"], TOL_SUM):
+                res["notes"].append(f"Сумма из Excel ({fmt(J)}) совпадает с поз. {o['no']} «{o['name']}» — "
+                                    f"похоже, в 1С перепутаны строки.")
+                res["other"] = o
+                break
+            if o["price"] and eq(I, o["price"], tol_price(o["price"])) and "price" in res["flags"]:
+                res["notes"].append(f"Цена из Excel ({fmt(I)}) совпадает с ценой поз. {o['no']} «{o['name']}».")
+                res["other"] = o
+                break
         res["status"] = "ОШИБКА"
     elif res["flags"] & {"unit", "name"}:
         res["status"] = "ПРОВЕРИТЬ"
@@ -403,6 +416,8 @@ def main():
     ap.add_argument("--excel", help="путь к Excel (если в папке их несколько)")
     ap.add_argument("--period", help="месяцы: 2026-10  или  2026-09,2026-10  или  все")
     ap.add_argument("-o", "--output", help="куда сохранить HTML-отчёт")
+    ap.add_argument("--excel-out", help="куда сохранить копию Excel с результатами")
+    ap.add_argument("--no-excel", action="store_true", help="не создавать копию Excel")
     args = ap.parse_args()
 
     folder = Path(args.folder)
@@ -506,6 +521,16 @@ def main():
     print("\nИтог: " + ", ".join(f"{k}: {v}" for k, v in c.most_common()))
     print(f"Отчёт: {out}")
 
+    if not args.no_excel:
+        import excel_writer
+        dst = Path(args.excel_out) if args.excel_out else xlsx.with_name(f"{xlsx.stem}_проверено{xlsx.suffix}")
+        print(f"Записываю результаты в копию Excel (колонки AV…BJ)…")
+        try:
+            excel_writer.write_copy(xlsx, dst, ws_name, results, lambda code: hist_stats(code, hist))
+            print(f"Excel: {dst}")
+        except PermissionError:
+            print(f"Не удалось сохранить {dst} — закройте этот файл в Excel и запустите снова.")
+
 
 # ---------------------------------------------------------------- HTML-отчёт
 STATUS_CLS = {"OK": "ok", "ПРОВЕРИТЬ": "warn", "ОШИБКА": "bad", "ПЕРЕПУТАНЫ СТРОКИ": "bad",
@@ -521,14 +546,24 @@ def fmt_date(d):
     return d.strftime("%d.%m.%Y") if isinstance(d, dt.datetime) else esc(d)
 
 
+def hist_stats(code, hist):
+    """Мин / макс / средняя / медиана цены кода по всем приходам листа «… (значение)»."""
+    prices = [x["price"] for x in hist.get(code, []) if x["price"]]
+    if not prices:
+        return None
+    srt = sorted(prices)
+    n = len(srt)
+    med = srt[n // 2] if n % 2 else (srt[n // 2 - 1] + srt[n // 2]) / 2
+    return {"n": n, "min": srt[0], "max": srt[-1], "avg": sum(srt) / n, "med": med}
+
+
 def price_history_html(code, hist, cur_rn_price):
     h = [x for x in hist.get(code, []) if x["price"]]
     if not h:
         return "<p class='muted'>Нет других приходов этого кода на листе «значение».</p>"
+    st = hist_stats(code, hist)
     prices = [x["price"] for x in h]
-    avg = sum(prices) / len(prices)
-    srt = sorted(prices)
-    med = srt[len(srt) // 2]
+    avg, med = st["avg"], st["med"]
     head = (f"<div class='hist-stats'><span>Приходов: <b>{len(h)}</b></span>"
             f"<span>Мин: <b>{fmt(min(prices))}</b></span><span>Макс: <b>{fmt(max(prices))}</b></span>"
             f"<span>Средняя: <b>{fmt(avg)}</b></span><span>Медиана: <b>{fmt(med)}</b></span>")
