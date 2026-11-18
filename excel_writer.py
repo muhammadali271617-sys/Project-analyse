@@ -268,18 +268,50 @@ def write_copy(src, dst, sheet_name, results, hist_stats_fn):
         sheet = re.sub(r'(<dimension ref="[A-Z]+\d+:)([A-Z]+)(\d+)"',
                        lambda m: f'{m.group(1)}{col_letters(max(col_idx(m.group(2)), LAST_COL))}{m.group(3)}"',
                        sheet, count=1)
-        # фильтр расширяется на новые колонки — можно фильтровать по статусу
-        sheet = re.sub(r'(<autoFilter ref="[A-Z]+\d+:)([A-Z]+)(\d+)"',
-                       lambda m: f'{m.group(1)}{col_letters(max(col_idx(m.group(2)), LAST_COL))}{m.group(3)}"',
-                       sheet, count=1)
+        # фильтр расширяется на новые колонки — можно фильтровать по статусу.
+        # Excel хранит диапазон фильтра ещё и в скрытом имени _xlnm._FilterDatabase —
+        # оба места должны совпадать, иначе Excel пишет «ошибка в части содержимого».
+        new_ref = None
+        m = re.search(r'<autoFilter ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"', sheet)
+        if m:
+            last = col_letters(max(col_idx(m.group(3)), LAST_COL))
+            new_ref = (m.group(1), m.group(2), last, m.group(4))
+            sheet = sheet[:m.start()] + f'<autoFilter ref="{m.group(1)}{m.group(2)}:{last}{m.group(4)}"' + sheet[m.end():]
 
+        workbook = z.read("xl/workbook.xml").decode("utf-8")
+        if new_ref:
+            workbook = fix_filter_name(workbook, sheet_name, new_ref)
+
+        # calcChain.xml — служебный список формул. Новых формул (колонка BM) в нём нет,
+        # поэтому убираем его: Excel сам построит его заново при открытии книги.
+        drop = {"xl/calcChain.xml"}
+        rels = z.read("xl/_rels/workbook.xml.rels").decode("utf-8")
+        rels = re.sub(r'<Relationship\b[^>]*Target="[^"]*calcChain\.xml"[^>]*/>', "", rels)
+        ctypes = z.read("[Content_Types].xml").decode("utf-8")
+        ctypes = re.sub(r'<Override\b[^>]*PartName="/xl/calcChain\.xml"[^>]*/>', "", ctypes)
+
+        replace = {sp: sheet, "xl/styles.xml": styles, "xl/workbook.xml": workbook,
+                   "xl/_rels/workbook.xml.rels": rels, "[Content_Types].xml": ctypes}
         with zipfile.ZipFile(dst, "w") as out:
             for info in z.infolist():
-                if info.filename == sp:
-                    data = sheet.encode("utf-8")
-                elif info.filename == "xl/styles.xml":
-                    data = styles.encode("utf-8")
-                else:
-                    data = z.read(info.filename)
+                if info.filename in drop:
+                    continue
+                data = replace[info.filename].encode("utf-8") if info.filename in replace else z.read(info.filename)
                 out.writestr(info, data, compress_type=zipfile.ZIP_DEFLATED)
     return len(results)
+
+
+def fix_filter_name(workbook, sheet_name, ref):
+    """Синхронизирует скрытое имя _xlnm._FilterDatabase листа с новым диапазоном фильтра."""
+    names = [re.search(r'\bname="([^"]*)"', m.group(0)).group(1)
+             for m in re.finditer(r"<sheet\b[^>]*/>", workbook)]
+    names = [n.replace("&amp;", "&").replace("&quot;", '"').replace("&lt;", "<").replace("&gt;", ">") for n in names]
+    if sheet_name not in names:
+        return workbook
+    idx = names.index(sheet_name)
+    c1, r1, c2, r2 = ref
+    quoted = "'" + sheet_name.replace("'", "''") + "'" if re.search(r"[^\w.]", sheet_name) else sheet_name
+    value = xml_text(f"{quoted}!${c1}${r1}:${c2}${r2}")
+    rx = re.compile(rf'(<definedName\b(?=[^>]*\bname="_xlnm\._FilterDatabase")(?=[^>]*\blocalSheetId="{idx}")[^>]*>)'
+                    r"[^<]*(</definedName>)")
+    return rx.sub(lambda m: m.group(1) + value + m.group(2), workbook, count=1)
