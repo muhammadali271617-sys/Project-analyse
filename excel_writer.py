@@ -117,12 +117,13 @@ ROW_RX = re.compile(r'<row\b[^>]*?\br="(\d+)"[^>]*?(?:/>|>.*?</row>)', re.S)
 
 
 def patch_row(row_xml, new_cells):
-    """new_cells: {номер колонки: xml}. Старые ячейки в этих колонках заменяются."""
+    """new_cells: {номер колонки: xml}. Все старые ячейки в колонках AV…BM этой строки
+    удаляются (в т.ч. чужие формулы), затем записываются новые."""
     m = re.match(r"<row\b([^>]*?)(/?)>", row_xml)
     attrs = re.sub(r'\s+spans="[^"]*"', "", m.group(1))
     inner = "" if m.group(2) else row_xml[m.end():-len("</row>")]
     cells = [(col_idx(cm.group(1)), cm.group(0)) for cm in CELL_RX.finditer(inner)]
-    cells = [c for c in cells if c[0] not in new_cells] + list(new_cells.items())
+    cells = [c for c in cells if not (FIRST_COL <= c[0] <= LAST_COL) and c[0] not in new_cells] + list(new_cells.items())
     cells.sort(key=lambda c: c[0])
     return f"<row{attrs}>" + "".join(x for _, x in cells) + "</row>"
 

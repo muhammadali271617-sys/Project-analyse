@@ -375,12 +375,34 @@ def compare_numbers(H, I, J, it, ex_unit):
     return score, notes, flags
 
 
+def grouped_items(items):
+    """Один и тот же товар (то же название и единица) в нескольких строках фактуры —
+    дополнительная «сложенная» позиция: кол-во, суммы и НДС складываются."""
+    groups = collections.OrderedDict()
+    for it in items:
+        key = (re.sub(r"\s+", " ", it["name"].lower()).strip(), unit_info(it["unit"])[0])
+        groups.setdefault(key, []).append(it)
+    out = []
+    for members in groups.values():
+        if len(members) < 2:
+            continue
+        add = lambda k: (sum(m[k] for m in members) if all(m[k] is not None for m in members) else None)
+        qty, summ = add("qty"), add("sum")
+        out.append({
+            "no": "+".join(str(m["no"]) for m in members), "name": members[0]["name"],
+            "ikpu": members[0].get("ikpu"), "unit": members[0]["unit"], "qty": qty,
+            "price": round(summ / qty, 2) if qty and summ is not None else members[0]["price"],
+            "sum": summ, "rate": members[0].get("rate"), "vat": add("vat"), "total": add("total"),
+            "members": members})
+    return out
+
+
 def match_row(row, inv):
     """Находит позицию в фактуре и формирует вывод."""
     H, I, J, F, G = row["H"], row["I"], row["J"], row["F"], row["G"]
     items = inv["items"]
     scored = []
-    for it in items:
+    for it in items + grouped_items(items):
         sc, notes, flags = compare_numbers(H, I, J, it, G)
         scored.append((it, sc, notes, flags, similarity(F, it["name"])))
 
@@ -389,8 +411,9 @@ def match_row(row, inv):
     if name_best and len(by_name) > 1 and by_name[1][4] >= name_best[4] - 0.1:
         # несколько похожих названий — выбираем среди них по числам
         tied = [x for x in by_name if x[4] >= name_best[4] - 0.1]
-        name_best = max(tied, key=lambda x: (x[1], x[4]))
-    num_best = max(scored, key=lambda x: (x[1], x[4])) if scored else None
+        # при равенстве — сложенная позиция (весь товар фактуры), а не одна из её строк
+        name_best = max(tied, key=lambda x: (x[1], x[4], bool(x[0].get("members"))))
+    num_best = max(scored, key=lambda x: (x[1], x[4], bool(x[0].get("members")))) if scored else None
 
     res = {"item": None, "status": "", "notes": [], "flags": set(), "sim": 0.0, "other": None}
     if not scored:
@@ -429,6 +452,15 @@ def match_row(row, inv):
 
     it, sc, notes, flags, sim = chosen
     res.update(item=it, sim=sim, notes=list(notes), flags=set(flags))
+    if it.get("members"):
+        ms = it["members"]
+        prices = {m["price"] for m in ms}
+        res["flags"].add("grouped")
+        res["notes"].insert(0, f"ℹ В фактуре этот товар в {len(ms)} строках (поз. {', '.join(str(m['no']) for m in ms)}): "
+                               f"{' + '.join(fmt(m['qty'], 3) for m in ms)} = {fmt(it['qty'], 3)}, "
+                               f"сумма {' + '.join(fmt(m['sum']) for m in ms)} = {fmt(it['sum'])} — сложено для сверки"
+                               + ("." if len(prices) == 1 else f"; цены в строках разные ({', '.join(fmt(p) for p in sorted(prices))}), "
+                                                               f"взята средняя {fmt(it['price'])}."))
     if sim < SWAP_MIN_SIM:
         res["flags"].add("name")
         if sc == 3:
@@ -443,7 +475,7 @@ def match_row(row, inv):
     if hard:
         # чьи это числа? ищем другую позицию с той же суммой или ценой
         for o in items:
-            if o is it:
+            if o is it or o in it.get("members", []):
                 continue
             if eq(J, o["sum"], TOL_SUM) or eq(J, o["total"], TOL_SUM):
                 res["notes"].append(f"Сумма из Excel ({fmt(J)}) совпадает с поз. {o['no']} «{o['name']}» — "
@@ -633,6 +665,8 @@ def short_problem(r):
                         ("unit", "Единица измерения"), ("name", "Название не похоже")):
         if flag in f and not (flag == "name" and "other_item" in f):
             parts.append(label)
+    if "grouped" in f and m and m.get("item"):
+        parts.append(f"Сложено {len(m['item']['members'])} строки фактуры")
     if "sum_other" in f:
         parts.append("Сумма от другой позиции")
     if "price_other" in f:
