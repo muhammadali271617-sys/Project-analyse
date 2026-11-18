@@ -28,6 +28,9 @@ LOG = HERE / "start.log"
 PREFERRED_PORT = 8770
 IDLE_EXIT_SEC = 15 * 60
 APP_ID = "sverka-faktur"
+# Версия самой программы-сервера (start.pyw). Страница сверяет её со своей —
+# если они разные, значит в памяти работает старая start.pyw и её нужно перезапустить.
+SERVER_VERSION = 9
 
 # pythonw.exe запускается без консоли: sys.stdout/stderr = None, любой print упал бы
 if sys.stdout is None or sys.stderr is None:
@@ -370,7 +373,7 @@ class Handler(BaseHTTPRequestHandler):
         ST.last_seen = time.time()
         if self.path == "/api/state":
             return self.send_json({"folder": ST.folder, "libs_error": LIBS_ERROR, "job": ST.job,
-                                   "version": getattr(sverka, "VERSION", None)})
+                                   "version": getattr(sverka, "VERSION", None), "server": SERVER_VERSION})
         if self.path == "/api/job":
             return self.send_json(ST.job)
         self.send_json({"error": "Не найдено"}, 404)

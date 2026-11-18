@@ -32,7 +32,7 @@ import pdfplumber
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
 # Меняется при каждом обновлении программы — видно на странице, в отчёте и в Excel
-VERSION = "2026-11-18 · v8"
+VERSION = "2026-11-18 · v9"
 
 # ---------------------------------------------------------------- допуски
 TOL_QTY = 0.001

@@ -378,6 +378,9 @@
 (function () {
   "use strict";
   var TOKEN = "{{TOKEN}}";
+  var PAGE_NEEDS_SERVER = 9;   // какой версии start.pyw нужна эта страница
+  var OLD_SERVER = "Запущена старая версия программы (start.pyw). Нажмите «✕ Завершить» вверху страницы " +
+                   "и запустите «Запустить сверку.bat» (или start.pyw) снова.";
   if (location.protocol === "file:" || TOKEN.indexOf("{{") === 0) {
     // страницу открыли двойным щелчком как файл — без программы она работать не может
     document.querySelectorAll("main > section, main > div.msg").forEach(function (el) { el.classList.add("hidden"); });
@@ -417,6 +420,7 @@
       body: body ? JSON.stringify(body) : undefined
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
+        if (r.status === 404) throw new Error(OLD_SERVER);
         if (!r.ok) throw new Error(j.error || ("Ошибка " + r.status));
         return j;
       });
@@ -750,6 +754,10 @@
   api("GET", "/api/state").then(function (s) {
     $("folder").value = s.folder || "";
     if (s.version) $("ver").textContent = "версия программы " + s.version;
+    if ((s.server || 0) < PAGE_NEEDS_SERVER) {
+      var d = $("libs"); d.textContent = OLD_SERVER; d.classList.remove("hidden");
+      d.className = "msg warn";
+    }
     if (s.libs_error) {
       $("libs").textContent = s.libs_error; show("libs", true);
       ["btn-pick", "btn-scan"].forEach(function (id) { $(id).disabled = true; });
