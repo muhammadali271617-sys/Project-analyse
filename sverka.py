@@ -161,6 +161,7 @@ RU_NUM_RX = re.compile(r"Сч[её]т-фактура\s*№\s*(\S+)\s+от\s+(\d{
 RU_CONTRACT_RX = re.compile(r"к договору\s*№\s*(.+?)\s+от\s+(\d{2}\.\d{2}\.\d{4})", re.I)
 RU_SUPPLIER_RX = re.compile(r"Поставщик:\s*(.+?)\s+Покупатель:")
 RU_INN_RX = re.compile(r"Идентификационный номер\s+(\d{9})")
+CORRECTION_RX = re.compile(r"№\s*(\S+)\s+ЭҲФ\s*га\s+Тузатувчи", re.I)  # исправленная фактура
 
 
 def parse_invoice(path):
@@ -179,6 +180,8 @@ def parse_invoice(path):
                                                      (mr.group(1), mr.group(2)) if mr else (None, None))
             m = SUPPLIER_RX.search(t0) or RU_SUPPLIER_RX.search(t0)
             inv["supplier"] = m.group(1).strip() if m else None
+            m = CORRECTION_RX.search(t0)
+            inv["correction"] = m.group(1) if m else None
             m = INN_RX.search(t0)
             if not m:
                 # в бланке поставщик слева, покупатель справа — их строки перемешиваются в тексте,
@@ -584,6 +587,9 @@ def run_check(folder, data, period, progress=None, report_path=None, excel_out=N
         if res["inv"]:
             res["match"] = match_row(x, res["inv"])
             res["status"] = res["match"]["status"]
+            if res["inv"].get("correction"):
+                res["match"]["notes"].append(f"ℹ Фактура исправленная (тузатувчи) к ЭҲФ № {res['inv']['correction']} — "
+                                             f"сверка по исправленным цифрам.")
         else:
             missing[(x["O"], x["Q"], x["R"])].append(x["rn"])
         res["short"] = short_problem(res)

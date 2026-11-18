@@ -34,14 +34,16 @@ DATE = r"\d{2}\.\d{2}\.\d{4}"
 
 # Шапка Didox: "Ҳисоб-фактура актсиз: 52 02.10.2026 дан"
 HEADER_PATTERNS = [
-    re.compile(rf"Ҳисоб-фактура[^:\n]*:\s*(\S+)\s+{DATE}\s+дан"),
+    # «дан» после даты не обязательно: в длинной шапке оно переносится на другую строку
+    re.compile(rf"Ҳисоб-фактура[^:\n]*:\s*(\S+)\s+{DATE}"),
     re.compile(rf"Hisob-faktura[^:\n]*:\s*(\S+)\s+{DATE}\s+dan", re.IGNORECASE),
     re.compile(rf"Сч[её]т-фактура[^:\n]*:\s*(\S+)\s+(?:от\s+)?{DATE}", re.IGNORECASE),
 ]
 
 # Заголовок документа: "02.10.2026 даги 52-сонли ... Ҳисобварақ-фактура"
 BODY_PATTERNS = [
-    re.compile(rf"{DATE}\s+даги\s+(\S+)-сонли\s*\n?\s*Ҳисобварақ-фактура"),
+    # у исправленных фактур между номером и заголовком стоит «Эски хисоб фактура ID: …»
+    re.compile(rf"{DATE}\s+даги\s+(\S+)-сонли(?:(?!даги)[\s\S]){{0,250}}?Ҳисобварақ-фактура"),
     re.compile(rf"{DATE}\s+dagi\s+(\S+)-sonli\s*\n?\s*Hisobvaraq-faktura", re.IGNORECASE),
     re.compile(rf"Сч[её]т-фактура\s*№\s*(\S+)\s+от\s+{DATE}", re.IGNORECASE),
 ]
@@ -66,12 +68,17 @@ def find_first(patterns, text):
     return None
 
 
+# исправленная фактура: «26.10.2026 даги № 30389 ЭҲФ га Тузатувчи»
+CORRECTION_RX = re.compile(r"№\s*(\S+)\s+ЭҲФ\s*га\s+Тузатувчи", re.IGNORECASE)
+
+
 def read_invoice_number(pdf_path: Path):
     """Возвращает (номер из шапки, номер из заголовка документа)."""
     with pdfplumber.open(pdf_path) as pdf:
         # номер всегда на первой странице
         text = pdf.pages[0].extract_text() or ""
-    return find_first(HEADER_PATTERNS, text), find_first(BODY_PATTERNS, text)
+    corr = CORRECTION_RX.search(text)
+    return find_first(HEADER_PATTERNS, text), find_first(BODY_PATTERNS, text), (corr.group(1) if corr else None)
 
 
 def file_number_from_name(stem: str) -> str:
@@ -93,7 +100,7 @@ def check_file(pdf_path: Path) -> dict:
         "comment": "",
     }
     try:
-        header_num, body_num = read_invoice_number(pdf_path)
+        header_num, body_num, corrected = read_invoice_number(pdf_path)
     except Exception as exc:  # битый / нечитаемый PDF
         row["status"] = STATUS_ERROR
         row["comment"] = str(exc)
@@ -107,13 +114,16 @@ def check_file(pdf_path: Path) -> dict:
 
     row["pdf_number"] = pdf_number
     comments = []
-    if header_num and body_num and normalize(header_num) != normalize(body_num):
+    header_body_differ = bool(header_num and body_num and normalize(header_num) != normalize(body_num))
+    if header_body_differ:
         comments.append(f"В шапке номер {header_num}, в документе {body_num}")
+    if corrected:  # только для сведения, на статус не влияет
+        comments.append(f"исправленная фактура (тузатувчи) к ЭҲФ № {corrected}")
 
     # Совпадение — только если ВСЕ найденные номера равны имени файла
     # (если в шапке и заголовке номера разные — это тоже ошибка)
     others = [n for n in (header_num, body_num) if n and normalize(n) != normalize(file_number)]
-    if not others and not comments:
+    if not others and not header_body_differ:
         row["status"] = STATUS_OK
     else:
         row["status"] = STATUS_MISMATCH

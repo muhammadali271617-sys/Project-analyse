@@ -301,14 +301,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   // Шапка Didox: "Ҳисоб-фактура актсиз: 52 02.10.2026 дан"
   var HEADER_PATTERNS = [
-    new RegExp("Ҳисоб-фактура[^:\\n]*:\\s*(\\S+)\\s+" + DATE + "\\s+дан"),
+    // «дан» после даты не обязательно: в длинной шапке оно переносится на другую строку
+    new RegExp("Ҳисоб-фактура[^:\\n]*:\\s*(\\S+)\\s+" + DATE),
     new RegExp("Hisob-faktura[^:\\n]*:\\s*(\\S+)\\s+" + DATE + "\\s+dan", "i"),
     new RegExp("Сч[её]т-фактура[^:\\n]*:\\s*(\\S+)\\s+(?:от\\s+)?" + DATE, "i")
   ];
   // Заголовок документа: "02.10.2026 даги 52-сонли Ҳисобварақ-фактура"
   // (между номером и словом "Ҳисобварақ" не должно быть другого "даги",
   //  чтобы не перепутать с номером договора "6-сонли шартномага")
-  var HEADER_GAP = "(?:(?!даги|dagi)[\\s\\S]){0,80}?";
+  // у исправленных фактур между номером и заголовком стоит «Эски хисоб фактура ID: …» — даём место
+  var HEADER_GAP = "(?:(?!даги|dagi)[\\s\\S]){0,250}?";
   var BODY_PATTERNS = [
     new RegExp(DATE + "\\s+даги\\s+(\\S+)-сонли" + HEADER_GAP + "Ҳисобварақ-фактура"),
     new RegExp(DATE + "\\s+dagi\\s+(\\S+)-sonli" + HEADER_GAP + "Hisobvaraq-faktura", "i"),
@@ -429,6 +431,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       var others = found.filter(function (n) { return normalize(n) !== fileN; });
       notes.unshift("Файл назван «" + row.fileNumber + "», а в фактуре номер " + others[0]);
     }
+    var corr = /№\s*(\S+)\s+ЭҲФ\s*га\s+Тузатувчи/i.exec(text);
+    if (corr) notes.push("исправленная фактура (тузатувчи) к ЭҲФ № " + corr[1]);
     // в официальном бланке Didox («Счет-фактура № …») номер и так написан один раз
     var officialForm = /Сч[её]т-фактура\s*№/i.test(text);
     if (!h && !officialForm) notes.push("номер найден только в заголовке");
