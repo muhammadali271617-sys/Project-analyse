@@ -53,8 +53,9 @@ STATUS_ERROR = "ОШИБКА ЧТЕНИЯ"
 
 
 def normalize(number: str) -> str:
-    """Приводит номер к единому виду для сравнения."""
-    return number.strip().upper().replace("/", ".")
+    """Приводит номер к единому виду для сравнения.
+    Разделители не важны: «472/п» = «472п» = «472.п», «543/2» = «543.2»."""
+    return re.sub(r"[\s/._\-]+", "", number.strip().upper())
 
 
 def find_first(patterns, text):

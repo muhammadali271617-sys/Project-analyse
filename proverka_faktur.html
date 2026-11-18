@@ -322,7 +322,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     ERR:   { text: "ОШИБКА ЧТЕНИЯ",   cls: "warn", group: 2 }
   };
 
-  function normalize(n) { return String(n).trim().toUpperCase().replace(/\//g, "."); }
+  // Для сравнения номеров разделители не важны: «472/п» = «472п» = «472.п», «543/2» = «543.2»
+  function normalize(n) { return String(n).trim().toUpperCase().replace(/[\s\/._\-]+/g, ""); }
 
   function findFirst(patterns, text) {
     for (var i = 0; i < patterns.length; i++) {
@@ -428,8 +429,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       var others = found.filter(function (n) { return normalize(n) !== fileN; });
       notes.unshift("Файл назван «" + row.fileNumber + "», а в фактуре номер " + others[0]);
     }
-    if (!h) notes.push("номер найден только в заголовке");
-    if (!b) notes.push("номер найден только в шапке");
+    // в официальном бланке Didox («Счет-фактура № …») номер и так написан один раз
+    var officialForm = /Сч[её]т-фактура\s*№/i.test(text);
+    if (!h && !officialForm) notes.push("номер найден только в заголовке");
+    if (!b && !officialForm) notes.push("номер найден только в шапке");
     row.status = bad ? ST.BAD : ST.OK;
     row.comment = notes.join("; ");
     return row;

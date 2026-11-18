@@ -179,7 +179,13 @@ def parse_invoice(path):
                                                      (mr.group(1), mr.group(2)) if mr else (None, None))
             m = SUPPLIER_RX.search(t0) or RU_SUPPLIER_RX.search(t0)
             inv["supplier"] = m.group(1).strip() if m else None
-            m = INN_RX.search(t0) or RU_INN_RX.search(t0)
+            m = INN_RX.search(t0)
+            if not m:
+                # в бланке поставщик слева, покупатель справа — их строки перемешиваются в тексте,
+                # поэтому ИНН поставщика ищем только в левой половине страницы
+                p0 = pdf.pages[0]
+                left = p0.crop((0, 0, p0.width / 2, p0.height)).extract_text() or ""
+                m = RU_INN_RX.search(left)
             inv["inn"] = m.group(1) if m else None
             for page in pdf.pages:
                 for tb in page.extract_tables():
