@@ -414,6 +414,7 @@ def match_row(row, inv):
             res["notes"].append(f"Названия без общих слов: в Excel «{F}», в фактуре «{it['name']}». "
                                 f"Кол-во, цена и сумма совпали — проверьте глазами, тот ли это товар.")
         else:
+            res["flags"].add("other_item")
             res["notes"].insert(0, f"Товара «{F}» в фактуре не найдено. Часть чисел совпадает с поз. "
                                    f"{it['no']} «{it['name']}» — это другой товар. Возможно, в 1С "
                                    f"перепутаны строки.")
@@ -427,10 +428,12 @@ def match_row(row, inv):
                 res["notes"].append(f"Сумма из Excel ({fmt(J)}) совпадает с поз. {o['no']} «{o['name']}» — "
                                     f"похоже, в 1С перепутаны строки.")
                 res["other"] = o
+                res["flags"].add("sum_other")
                 break
             if o["price"] and eq(I, o["price"], tol_price(o["price"])) and "price" in res["flags"]:
                 res["notes"].append(f"Цена из Excel ({fmt(I)}) совпадает с ценой поз. {o['no']} «{o['name']}».")
                 res["other"] = o
+                res["flags"].add("price_other")
                 break
         res["status"] = "ОШИБКА"
     elif res["flags"] & {"unit", "name"}:
@@ -441,73 +444,94 @@ def match_row(row, inv):
 
 
 # ---------------------------------------------------------------- основной процесс
-def main():
-    ap = argparse.ArgumentParser(description="Сверка Excel с PDF счёт-фактурами")
-    ap.add_argument("folder", nargs="?", default=".", help="папка, где лежат Excel и PDF-фактуры")
-    ap.add_argument("--excel", help="путь к Excel (если в папке их несколько)")
-    ap.add_argument("--period", help="месяцы: 2026-10  или  2026-09,2026-10  или  все")
-    ap.add_argument("--sheet", help="имя листа, если в книге их несколько")
-    ap.add_argument("-o", "--output", help="куда сохранить HTML-отчёт")
-    ap.add_argument("--excel-out", help="куда сохранить копию Excel с результатами")
-    ap.add_argument("--no-excel", action="store_true", help="не создавать копию Excel")
-    args = ap.parse_args()
+class CheckError(Exception):
+    """Понятная пользователю ошибка (нет Excel, нет листа и т.п.)."""
 
-    folder = Path(args.folder)
-    if not folder.is_dir():
-        sys.exit(f"Папка не найдена: {folder}")
-    if args.excel:
-        xlsx = Path(args.excel)
-    else:
-        cands = [p for p in folder.iterdir() if p.suffix.lower() in (".xlsx", ".xlsm")
-                 and not p.name.startswith("~$") and "проверено" not in p.name]
-        if len(cands) != 1:
-            sys.exit("В папке должен быть ровно один Excel-файл (или укажите --excel). Найдено: "
-                     + (", ".join(p.name for p in cands) or "ни одного"))
-        xlsx = cands[0]
 
-    print(f"Excel: {xlsx.name} — открываю (большой файл, подождите)…")
-    wb = openpyxl.load_workbook(xlsx, read_only=True, data_only=True)
-    ws_name = choose_work_sheet(wb.sheetnames, args.sheet)
-    print(f"Рабочий лист: {ws_name}")
+class NeedSheet(CheckError):
+    """В книге несколько листов для проверки — нужно выбрать один."""
+    def __init__(self, sheets):
+        super().__init__("В книге несколько листов для проверки — выберите лист.")
+        self.sheets = sheets
 
-    rows = []
-    for rn, r in enumerate(wb[ws_name].iter_rows(min_row=5, values_only=True), start=5):
-        if len(r) <= COLS["AP"] or r[COLS["C"]] is None:
-            continue
-        if not is_colored(r) or str(r[COLS["AA"]]).strip().lower() == "имп":
-            continue
-        rows.append({
-            "rn": rn, "code": r[COLS["C"]], "F": r[COLS["F"]], "G": r[COLS["G"]],
-            "H": to_float(r[COLS["H"]]), "I": to_float(r[COLS["I"]]), "J": to_float(r[COLS["J"]]),
-            "O": r[COLS["O"]], "Q": r[COLS["Q"]], "R": str(r[COLS["R"]] or "").strip(),
-            "Z": r[COLS["Z"]], "AL": to_float(r[COLS["AL"]]), "AM": r[COLS["AM"]],
-            "month": month_key(r[COLS["Z"]])})
-    period = ask_period(collections.Counter(x["month"] for x in rows), args.period)
-    rows = [x for x in rows if x["month"] in period]
-    print(f"Цветных строк за период ({', '.join(month_name(p) for p in sorted(period))}): {len(rows)}")
 
-    # история цен по коду — лист «… (значение)»
-    hist = collections.defaultdict(list)
-    vs = find_values_sheet(wb)
-    if vs:
-        print(f"История цен: лист «{vs}»…")
-        for rn, r in enumerate(wb[vs].iter_rows(min_row=5, values_only=True), start=5):
-            if len(r) <= COLS["AL"] or r[COLS["C"]] is None:
+def _say(progress, text, done=None, total=None):
+    if progress:
+        progress(text, done, total)
+
+
+def find_excels(folder):
+    """Excel-файлы в папке (без временных ~$ и без уже проверенных копий)."""
+    return sorted(p for p in Path(folder).iterdir()
+                  if p.is_file() and p.suffix.lower() in (".xlsx", ".xlsm")
+                  and not p.name.startswith("~$") and "проверено" not in p.name.lower())
+
+
+def is_open_in_excel(path):
+    """Excel создаёт рядом файл «~$имя» пока книга открыта."""
+    path = Path(path)
+    return (path.parent / ("~$" + path.name[2:])).exists() or (path.parent / ("~$" + path.name)).exists()
+
+
+def load_excel(xlsx, sheet=None, progress=None, ask=input):
+    """Читает рабочий лист (цветные местные строки) и историю цен. Excel после этого закрыт."""
+    _say(progress, f"Открываю Excel «{Path(xlsx).name}»…")
+    try:
+        wb = openpyxl.load_workbook(xlsx, read_only=True, data_only=True)
+    except PermissionError:
+        raise CheckError(f"Не удаётся открыть «{Path(xlsx).name}». Закройте его в Excel и попробуйте снова.")
+    try:
+        found = work_sheets(wb.sheetnames)
+        if sheet is None and len(found) > 1 and ask is None:
+            raise NeedSheet(found)
+        try:
+            ws_name = choose_work_sheet(wb.sheetnames, sheet, ask=ask)
+        except SystemExit as e:
+            raise CheckError(str(e))
+        _say(progress, f"Читаю лист «{ws_name}»…")
+        rows = []
+        for rn, r in enumerate(wb[ws_name].iter_rows(min_row=5, values_only=True), start=5):
+            if len(r) <= COLS["AP"] or r[COLS["C"]] is None:
                 continue
-            hist[r[COLS["C"]]].append({"date": r[COLS["Z"]], "supplier": r[COLS["O"]], "R": r[COLS["R"]],
-                                       "qty": to_float(r[COLS["H"]]), "unit": r[COLS["G"]],
-                                       "price": to_float(r[COLS["AL"]]), "imp": r[COLS["AA"]]})
-    wb.close()
+            if not is_colored(r) or str(r[COLS["AA"]]).strip().lower() == "имп":
+                continue
+            rows.append({
+                "rn": rn, "code": r[COLS["C"]], "F": r[COLS["F"]], "G": r[COLS["G"]],
+                "H": to_float(r[COLS["H"]]), "I": to_float(r[COLS["I"]]), "J": to_float(r[COLS["J"]]),
+                "O": r[COLS["O"]], "Q": r[COLS["Q"]], "R": str(r[COLS["R"]] or "").strip(),
+                "Z": r[COLS["Z"]], "AL": to_float(r[COLS["AL"]]), "AM": r[COLS["AM"]],
+                "month": month_key(r[COLS["Z"]])})
+        # история цен по коду — лист «… (значение)»
+        hist = collections.defaultdict(list)
+        vs = find_values_sheet(wb)
+        if vs:
+            _say(progress, f"Читаю историю цен (лист «{vs}»)…")
+            for rn, r in enumerate(wb[vs].iter_rows(min_row=5, values_only=True), start=5):
+                if len(r) <= COLS["AL"] or r[COLS["C"]] is None:
+                    continue
+                hist[r[COLS["C"]]].append({"date": r[COLS["Z"]], "supplier": r[COLS["O"]], "R": r[COLS["R"]],
+                                           "qty": to_float(r[COLS["H"]]), "unit": r[COLS["G"]],
+                                           "price": to_float(r[COLS["AL"]]), "imp": r[COLS["AA"]]})
+        return {"xlsx": Path(xlsx), "sheets": found, "ws_name": ws_name, "rows": rows, "hist": hist,
+                "months": collections.Counter(x["month"] for x in rows)}
+    finally:
+        wb.close()
+
+
+def run_check(folder, data, period, progress=None, report_path=None, excel_out=None, write_excel=True):
+    """Сверка цветных строк за период с фактурами из папки. Возвращает всё для отчётов и интерфейса."""
+    folder = Path(folder)
+    xlsx, ws_name, hist = data["xlsx"], data["ws_name"], data["hist"]
+    rows = [x for x in data["rows"] if x["month"] in period]
 
     # фактуры (только PDF в самой папке)
     pdfs = sorted(p for p in folder.iterdir() if p.is_file() and p.suffix.lower() == ".pdf")
-    print(f"Читаю фактуры: {len(pdfs)} PDF…")
     invoices, bad_pdfs = [], []
     for i, p in enumerate(pdfs, 1):
+        _say(progress, f"Читаю фактуры {i} из {len(pdfs)}…", i - 1, len(pdfs))
         inv = parse_invoice(p)
         (bad_pdfs if inv["error"] else invoices).append(inv)
-        print(f"\r  {i}/{len(pdfs)}", end="", flush=True)
-    print()
+    _say(progress, "Сверяю строки с фактурами…", len(pdfs), len(pdfs))
     by_num = collections.defaultdict(list)
     for inv in invoices:
         by_num[norm_num(inv["num"])].append(inv)
@@ -533,6 +557,7 @@ def main():
             res["inv"] = same_contract[0]
         elif cands:
             res["status"] = "НЕТ ФАКТУРЫ"
+            res["other_contract"] = True
             res["note"] = (f"Есть фактура № {x['R']}, но с другим договором "
                            f"({cands[0]['contract']}, {cands[0]['supplier']}). Нужна фактура по договору {x['Q']}.")
         else:
@@ -543,23 +568,100 @@ def main():
             res["status"] = res["match"]["status"]
         else:
             missing[(x["O"], x["Q"], x["R"])].append(x["rn"])
+        res["short"] = short_problem(res)
         results.append(res)
 
-    out = Path(args.output) if args.output else folder / f"отчет_сверки_{ws_name}.html"
+    out = Path(report_path) if report_path else folder / f"отчет_сверки_{ws_name}.html"
+    _say(progress, "Сохраняю отчёт…")
     write_html(out, xlsx.name, ws_name, period, results, missing, bad_pdfs, invoices, hist)
-    c = collections.Counter(r["status"] for r in results)
-    print("\nИтог: " + ", ".join(f"{k}: {v}" for k, v in c.most_common()))
-    print(f"Отчёт: {out}")
 
-    if not args.no_excel:
+    dst, excel_error = None, None
+    if write_excel:
         import excel_writer
-        dst = Path(args.excel_out) if args.excel_out else xlsx.with_name(f"{xlsx.stem}_проверено{xlsx.suffix}")
-        print(f"Записываю результаты в копию Excel (колонки AV…BJ)…")
+        dst = Path(excel_out) if excel_out else xlsx.with_name(f"{xlsx.stem}_проверено{xlsx.suffix}")
+        _say(progress, "Записываю результаты в копию Excel…")
         try:
             excel_writer.write_copy(xlsx, dst, ws_name, results, lambda code: hist_stats(code, hist))
-            print(f"Excel: {dst}")
         except PermissionError:
-            print(f"Не удалось сохранить {dst} — закройте этот файл в Excel и запустите снова.")
+            excel_error = (f"Не удалось сохранить «{dst.name}» — этот файл открыт в Excel. "
+                           f"Закройте его и запустите проверку снова.")
+            dst = None
+    return {"results": results, "missing": missing, "bad_pdfs": bad_pdfs, "invoices": invoices,
+            "report": out, "excel": dst, "excel_error": excel_error, "period": period, "ws_name": ws_name,
+            "counts": collections.Counter(r["status"] for r in results)}
+
+
+def short_problem(r):
+    """Коротко, в чём проблема (колонка «Проблема»)."""
+    m, f = r.get("match"), set()
+    if m:
+        f = m["flags"]
+    parts = []
+    if r["status"] == "НЕТ ФАКТУРЫ":
+        parts.append("Фактура другого договора" if r.get("other_contract") else "Нет фактуры")
+    if "swap" in f:
+        parts.append("Перепутаны строки")
+    if "notfound" in f:
+        parts.append("Нет такой позиции в фактуре")
+    if "other_item" in f:
+        parts.append("Другой товар")
+    for flag, label in (("qty", "Кол-во"), ("price", "Цена"), ("sum", "Сумма"), ("vat", "Взято с НДС"),
+                        ("unit", "Единица измерения"), ("name", "Название не похоже")):
+        if flag in f and not (flag == "name" and "other_item" in f):
+            parts.append(label)
+    if "sum_other" in f:
+        parts.append("Сумма от другой позиции")
+    if "price_other" in f:
+        parts.append("Цена от другой позиции")
+    for w in r["warn"]:
+        parts.append("Дубль строки" if w.startswith("Дубль") else "Дробные штуки")
+    return ", ".join(parts)
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Сверка Excel с PDF счёт-фактурами")
+    ap.add_argument("folder", nargs="?", default=".", help="папка, где лежат Excel и PDF-фактуры")
+    ap.add_argument("--excel", help="путь к Excel (если в папке их несколько)")
+    ap.add_argument("--period", help="месяцы: 2026-10  или  2026-09,2026-10  или  все")
+    ap.add_argument("--sheet", help="имя листа, если в книге их несколько")
+    ap.add_argument("-o", "--output", help="куда сохранить HTML-отчёт")
+    ap.add_argument("--excel-out", help="куда сохранить копию Excel с результатами")
+    ap.add_argument("--no-excel", action="store_true", help="не создавать копию Excel")
+    args = ap.parse_args()
+
+    folder = Path(args.folder)
+    if not folder.is_dir():
+        sys.exit(f"Папка не найдена: {folder}")
+    if args.excel:
+        xlsx = Path(args.excel)
+    else:
+        cands = find_excels(folder)
+        if len(cands) != 1:
+            sys.exit("В папке должен быть ровно один Excel-файл (или укажите --excel). Найдено: "
+                     + (", ".join(p.name for p in cands) or "ни одного"))
+        xlsx = cands[0]
+
+    def progress(text, done=None, total=None):
+        if done is not None and total:
+            print(f"\r{text}", end="", flush=True)
+        else:
+            print(text)
+
+    try:
+        data = load_excel(xlsx, args.sheet, progress)
+    except CheckError as e:
+        sys.exit(str(e))
+    print(f"Рабочий лист: {data['ws_name']}")
+    period = ask_period(data["months"], args.period)
+    print(f"Цветных строк за период ({', '.join(month_name(p) for p in sorted(period))}): "
+          f"{sum(data['months'][p] for p in period)}")
+    res = run_check(folder, data, period, progress, args.output, args.excel_out, not args.no_excel)
+    print("\nИтог: " + ", ".join(f"{k}: {v}" for k, v in res["counts"].most_common()))
+    print(f"Отчёт: {res['report']}")
+    if res["excel"]:
+        print(f"Excel: {res['excel']}")
+    if res["excel_error"]:
+        print(res["excel_error"])
 
 
 # ---------------------------------------------------------------- HTML-отчёт

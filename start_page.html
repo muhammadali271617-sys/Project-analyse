@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Сверка с фактурами</title>
+<style>
+  :root {
+    --space: #04050d; --text: #e9ecff; --muted: #9aa3c7; --line: rgba(160,150,255,.2);
+    --glass: rgba(12,14,38,.62); --glass2: rgba(255,255,255,.04);
+    --violet: #8b5cf6; --blue: #3b82f6; --cyan: #22d3ee; --pink: #ec4899;
+    --ok: #34d399; --bad: #fb7185; --warn: #fbbf24; --none: #94a3b8; --swap: #f472b6;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--space); }
+  body { margin: 0; min-height: 100vh; color: var(--text);
+    font: 15px/1.5 "Segoe UI", system-ui, Arial, sans-serif;
+    background:
+      radial-gradient(1100px 600px at 10% -10%, rgba(139,92,246,.33), transparent 60%),
+      radial-gradient(900px 500px at 95% 10%, rgba(236,72,153,.2), transparent 60%),
+      radial-gradient(1000px 700px at 60% 110%, rgba(59,130,246,.25), transparent 60%), var(--space);
+    background-attachment: fixed; }
+  #stars { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+  main { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 28px 16px 70px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand svg { width: 50px; height: 50px; filter: drop-shadow(0 0 12px rgba(139,92,246,.7)); }
+  h1 { margin: 0; font-size: 30px; background: linear-gradient(90deg,#a5f3fc,#c4b5fd 45%,#f9a8d4);
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { color: var(--muted); margin: 0; font-size: 14px; }
+  .card { background: var(--glass); border: 1px solid var(--line); border-radius: 18px; padding: 22px;
+    margin-bottom: 18px; backdrop-filter: blur(8px); box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+  h2 { margin: 0 0 14px; font-size: 19px; display: flex; align-items: center; gap: 10px; }
+  .step { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--violet), var(--blue)); font-size: 14px; font-weight: 700; }
+  button { font: inherit; cursor: pointer; border-radius: 12px; border: 1px solid transparent;
+    transition: transform .15s, box-shadow .2s, background .2s; }
+  button:disabled { opacity: .45; cursor: default; transform: none !important; box-shadow: none !important; }
+  .btn { background: rgba(34,211,238,.07); color: #a5f3fc; border-color: rgba(34,211,238,.45); padding: 10px 18px; }
+  .btn:hover:not(:disabled) { background: rgba(34,211,238,.15); box-shadow: 0 0 16px rgba(34,211,238,.3); }
+  .btn-big { color: #fff; font-size: 22px; font-weight: 700; padding: 16px 54px; min-width: 260px;
+    background: linear-gradient(135deg, var(--violet), var(--blue) 60%, var(--cyan));
+    box-shadow: 0 0 22px rgba(139,92,246,.55), 0 0 60px rgba(59,130,246,.22); }
+  .btn-big:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 30px rgba(139,92,246,.8), 0 0 80px rgba(34,211,238,.3); }
+  .btn-quit { background: rgba(251,113,133,.08); color: #fecdd3; border-color: rgba(251,113,133,.45); padding: 9px 16px; }
+  .btn-quit:hover { background: rgba(251,113,133,.18); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  input[type=text], select { font: inherit; color: var(--text); background: rgba(0,0,0,.35);
+    border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  input[type=text] { flex: 1; min-width: 260px; font-family: Consolas, "Cascadia Mono", monospace; font-size: 14px; }
+  select option { background: #10122a; }
+  .info { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 14px; }
+  .info div { background: var(--glass2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  .info span { display: block; color: var(--muted); font-size: 12px; }
+  .info b { word-break: break-all; }
+  .months { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .chip { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--glass2);
+    color: var(--text); user-select: none; }
+  .chip small { color: var(--muted); margin-left: 6px; }
+  .chip.on { background: rgba(139,92,246,.28); border-color: rgba(167,139,250,.8); box-shadow: 0 0 14px rgba(139,92,246,.35); }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .msg { margin-top: 14px; padding: 12px 16px; border-radius: 12px; border: 1px solid; }
+  .msg.err { background: rgba(251,113,133,.12); border-color: rgba(251,113,133,.45); color: #fecdd3; }
+  .msg.warn { background: rgba(251,191,36,.1); border-color: rgba(251,191,36,.4); color: #fde68a; }
+  .msg.ok { background: rgba(52,211,153,.1); border-color: rgba(52,211,153,.4); color: #a7f3d0; }
+  .run { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+  .progress { flex: 1; min-width: 260px; }
+  .ptext { color: var(--muted); }
+  .bar { height: 10px; background: rgba(255,255,255,.08); border-radius: 6px; overflow: hidden; margin-top: 8px; }
+  .bar > div { height: 100%; width: 0; border-radius: 6px; transition: width .25s;
+    background: linear-gradient(90deg, var(--violet), var(--cyan), var(--pink)); box-shadow: 0 0 12px rgba(34,211,238,.7); }
+  .bar.indet > div { width: 35% !important; animation: indet 1.2s ease-in-out infinite; }
+  @keyframes indet { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .stat { text-align: left; border-radius: 14px; padding: 14px 16px; background: var(--glass2);
+    border: 1px solid var(--line); color: var(--text); }
+  .stat b { display: block; font-size: 32px; line-height: 1.1; }
+  .stat span { color: var(--muted); font-size: 13px; }
+  .stat.ok b { color: var(--ok); } .stat.bad b { color: var(--bad); } .stat.swap b { color: var(--swap); }
+  .stat.warn b { color: var(--warn); } .stat.none b { color: var(--none); }
+  .stat.active { outline: 2px solid rgba(167,139,250,.9); box-shadow: 0 0 18px rgba(139,92,246,.4); }
+  .stat:hover { background: rgba(255,255,255,.07); }
+  .opens { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .tools input { min-width: 240px; }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filters .chip { padding: 6px 12px; font-size: 13px; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 9px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid rgba(160,150,255,.1); }
+  th { background: rgba(139,92,246,.16); color: #ddd6fe; position: sticky; top: 0; white-space: nowrap; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover td { background: rgba(255,255,255,.04); }
+  td.n { font-family: Consolas, monospace; color: var(--muted); }
+  td.code { font-family: Consolas, monospace; color: #a5f3fc; white-space: nowrap; }
+  .st { font-weight: 700; font-size: 12px; padding: 3px 9px; border-radius: 999px; white-space: nowrap; display: inline-block; }
+  .st.ok { background: rgba(52,211,153,.15); color: var(--ok); }
+  .st.bad { background: rgba(251,113,133,.16); color: var(--bad); }
+  .st.swap { background: rgba(244,114,182,.18); color: var(--swap); }
+  .st.warn { background: rgba(251,191,36,.15); color: var(--warn); }
+  .st.none { background: rgba(148,163,184,.16); color: var(--none); }
+  tr.details td { background: rgba(0,0,0,.25); cursor: default; }
+  .det ul { margin: 4px 0 0 18px; padding: 0; } .det li { margin: 3px 0; }
+  .cmp { display: grid; grid-template-columns: auto repeat(4, minmax(90px, auto)); gap: 2px 16px; margin-top: 8px;
+    font-family: Consolas, monospace; font-size: 13px; }
+  .cmp .h { color: var(--muted); font-family: "Segoe UI", sans-serif; }
+  .empty { padding: 30px; text-align: center; color: var(--muted); }
+  .hidden { display: none !important; }
+  footer { position: relative; z-index: 1; text-align: center; color: #6f78a0; font-size: 12px; margin-top: 24px; }
+  @media (max-width: 640px) { .btn-big { width: 100%; min-width: 0; } h1 { font-size: 24px; } }
+</style>
+</head>
+<body>
+<canvas id="stars" aria-hidden="true"></canvas>
+<main>
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <defs>
+          <radialGradient id="pg" cx="38%" cy="32%" r="70%"><stop offset="0" stop-color="#f0abfc"/><stop offset=".45" stop-color="#8b5cf6"/><stop offset="1" stop-color="#1e1b4b"/></radialGradient>
+          <linearGradient id="rg" x1="0" x2="1"><stop offset="0" stop-color="#22d3ee" stop-opacity=".2"/><stop offset=".5" stop-color="#a5f3fc"/><stop offset="1" stop-color="#22d3ee" stop-opacity=".2"/></linearGradient>
+        </defs>
+        <ellipse cx="32" cy="34" rx="30" ry="8" fill="none" stroke="url(#rg)" stroke-width="2.5" transform="rotate(-18 32 34)"/>
+        <circle cx="32" cy="32" r="17" fill="url(#pg)"/>
+        <path d="M2 34 A30 8 0 0 0 62 34" fill="none" stroke="url(#rg)" stroke-width="2.5" transform="rotate(-18 32 34)"/>
+      </svg>
+      <div>
+        <h1>Сверка с фактурами</h1>
+        <p class="sub">Цветные строки Excel ↔ PDF счёт-фактуры Didox. Всё работает на этом компьютере.</p>
+      </div>
+    </div>
+    <button class="btn-quit" id="btn-quit" title="Остановить программу">⏻ Завершить</button>
+  </header>
+
+  <div id="libs" class="msg err hidden"></div>
+
+  <!-- 1. Папка -->
+  <section class="card">
+    <h2><span class="step">1</span> Папка с Excel и фактурами</h2>
+    <div class="row">
+      <input type="text" id="folder" spellcheck="false" placeholder="D:\all factures for price analyses">
+      <button class="btn" id="btn-pick">📁 Выбрать папку…</button>
+      <button class="btn" id="btn-scan">↻ Прочитать</button>
+    </div>
+    <div class="hint">Можно выбрать папку кнопкой или вставить путь из проводника и нажать «Прочитать».</div>
+    <div id="choose-excel" class="hidden" style="margin-top:12px">
+      <div class="hint">В папке несколько Excel-файлов — выберите нужный:</div>
+      <div class="row" style="margin-top:6px"><select id="excel-select"></select><button class="btn" id="btn-excel">Выбрать</button></div>
+    </div>
+    <div id="choose-sheet" class="hidden" style="margin-top:12px">
+      <div class="hint">В книге несколько листов для проверки — выберите лист:</div>
+      <div class="row" style="margin-top:6px"><select id="sheet-select"></select><button class="btn" id="btn-sheet">Выбрать</button></div>
+    </div>
+    <div id="scan-info" class="info hidden">
+      <div><span>Excel</span><b id="i-excel"></b></div>
+      <div><span>Лист</span><b id="i-sheet"></b></div>
+      <div><span>PDF-фактур в папке</span><b id="i-pdfs"></b></div>
+    </div>
+    <div id="scan-msg"></div>
+  </section>
+
+  <!-- 2. Период -->
+  <section class="card hidden" id="period-card">
+    <h2><span class="step">2</span> Период (по колонке Z «Дата»)</h2>
+    <div class="row">
+      <button class="btn" id="m-last">Последний месяц</button>
+      <button class="btn" id="m-all">Все месяцы</button>
+      <button class="btn" id="m-none">Снять выбор</button>
+    </div>
+    <div class="months" id="months"></div>
+    <div class="hint" id="m-sum"></div>
+  </section>
+
+  <!-- 3. Проверка -->
+  <section class="card hidden" id="run-card">
+    <h2><span class="step">3</span> Проверка</h2>
+    <div class="run">
+      <button class="btn-big" id="btn-run">Проверить</button>
+      <div class="progress hidden" id="progress">
+        <div class="ptext" id="ptext">…</div>
+        <div class="bar" id="bar"><div id="pbar"></div></div>
+      </div>
+    </div>
+    <div id="run-msg"></div>
+  </section>
+
+  <!-- Результаты -->
+  <section class="card hidden" id="res-card">
+    <h2>Итоги <span class="sub" id="res-sub" style="font-weight:400"></span></h2>
+    <div class="cards" id="cards"></div>
+    <div class="opens">
+      <button class="btn" id="open-excel">📗 Открыть Excel с результатами</button>
+      <button class="btn" id="open-report">🌐 Открыть полный отчёт</button>
+    </div>
+    <div id="res-msg"></div>
+  </section>
+
+  <section class="card hidden" id="table-card">
+    <h2>Проблемные строки <span class="sub" id="t-count" style="font-weight:400"></span></h2>
+    <div class="tools">
+      <input type="text" id="search" placeholder="Поиск по коду, названию, номеру фактуры…" style="font-family:inherit">
+      <div class="filters" id="filters"></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Статус</th><th>Строка</th><th>Код</th><th>Товар (Excel)</th><th>№ вх.</th><th>Фактура</th><th>Проблема</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="hint">Нажмите на строку, чтобы увидеть подробности и сравнение чисел.</div>
+  </section>
+</main>
+<footer>Работает офлайн · сервер только на этом компьютере (127.0.0.1)</footer>
+
+<script>
+(function () {
+  "use strict";
+  var TOKEN = "{{TOKEN}}";
+  var $ = function (id) { return document.getElementById(id); };
+  var STATUS = {
+    "ПЕРЕПУТАНЫ СТРОКИ": { cls: "swap", short: "Перепутаны" },
+    "ОШИБКА": { cls: "bad", short: "Ошибка" },
+    "ПОЗИЦИЯ НЕ НАЙДЕНА": { cls: "bad", short: "Не найдена" },
+    "ПРОВЕРИТЬ": { cls: "warn", short: "Проверить" },
+    "НЕТ ФАКТУРЫ": { cls: "none", short: "Нет фактуры" },
+    "OK": { cls: "ok", short: "OK" }
+  };
+  var ORDER = ["OK", "ПЕРЕПУТАНЫ СТРОКИ", "ОШИБКА", "ПОЗИЦИЯ НЕ НАЙДЕНА", "ПРОВЕРИТЬ", "НЕТ ФАКТУРЫ"];
+  var state = { months: [], selected: {}, rows: [], filter: "ALL", busy: false, result: null };
+
+  // ---------- API ----------
+  function api(method, path, body) {
+    return fetch(path, {
+      method: method, cache: "no-store",
+      headers: { "X-Token": TOKEN, "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok) throw new Error(j.error || ("Ошибка " + r.status));
+        return j;
+      });
+    }, function () { throw new Error("Программа не отвечает. Возможно, она была завершена — запустите start.pyw снова."); });
+  }
+
+  function msg(el, text, kind) {
+    $(el).innerHTML = "";
+    if (!text) return;
+    var d = document.createElement("div");
+    d.className = "msg " + (kind || "err");
+    d.textContent = text;
+    $(el).appendChild(d);
+  }
+  function show(id, on) { $(id).classList.toggle("hidden", !on); }
+  function setBusy(on) {
+    state.busy = on;
+    ["btn-pick", "btn-scan", "btn-run", "btn-excel", "btn-sheet", "open-excel", "open-report"].forEach(function (id) { $(id).disabled = on; });
+  }
+
+  function fmt(x, nd) {
+    if (x === null || x === undefined || x === "") return "—";
+    if (typeof x !== "number") return String(x);
+    var d = nd === undefined ? 2 : nd;
+    var s = x.toLocaleString("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: d });
+    return s;
+  }
+
+  // ---------- задания с прогрессом ----------
+  function waitJob(onDone, onError) {
+    show("progress", true);
+    (function poll() {
+      api("GET", "/api/job").then(function (j) {
+        $("ptext").textContent = j.text || "…";
+        var bar = $("bar");
+        if (j.total) { bar.classList.remove("indet"); $("pbar").style.width = Math.round(100 * (j.done || 0) / j.total) + "%"; }
+        else { bar.classList.add("indet"); }
+        if (j.state === "running") return setTimeout(poll, 400);
+        show("progress", false);
+        setBusy(false);
+        if (j.state === "done") onDone(j.result || {});
+        else onError(j.error || "Ошибка");
+      }).catch(function (e) { show("progress", false); setBusy(false); onError(e.message); });
+    })();
+  }
+
+  // ---------- 1. папка ----------
+  function scan(extra) {
+    var body = Object.assign({ folder: $("folder").value.trim() }, extra || {});
+    msg("scan-msg"); msg("run-msg");
+    show("scan-info", false); show("period-card", false); show("run-card", false);
+    show("choose-excel", false); show("choose-sheet", false);
+    setBusy(true);
+    show("run-card", true); $("btn-run").disabled = true;
+    api("POST", "/api/scan", body).then(function (r) {
+      if (r.error) throw new Error(r.error);
+      waitJob(onScan, function (e) { show("run-card", false); msg("scan-msg", e); });
+    }).catch(function (e) { setBusy(false); show("run-card", false); msg("scan-msg", e.message); });
+  }
+
+  function onScan(r) {
+    if (r.need_excel) {
+      show("run-card", false);
+      fillSelect("excel-select", r.need_excel); show("choose-excel", true); return;
+    }
+    if (r.need_sheet) {
+      show("run-card", false);
+      fillSelect("sheet-select", r.need_sheet); show("choose-sheet", true); return;
+    }
+    state.excel = r.excel; state.sheet = r.sheet;
+    $("i-excel").textContent = r.excel; $("i-sheet").textContent = r.sheet; $("i-pdfs").textContent = r.pdfs;
+    show("scan-info", true);
+    if (r.open_warning) msg("scan-msg", r.open_warning, "warn");
+    if (!r.pdfs) msg("scan-msg", "В папке нет PDF-фактур — все строки будут «Нет фактуры».", "warn");
+    state.months = r.months || [];
+    state.selected = {};
+    if (state.months.length) state.selected[state.months[state.months.length - 1].key] = true;
+    renderMonths();
+    show("period-card", true); show("run-card", true);
+    if (!state.months.length) msg("run-msg", "На листе нет цветных строк (Разница вне пределов) для проверки.", "warn");
+  }
+
+  function fillSelect(id, items) {
+    var s = $(id); s.innerHTML = "";
+    items.forEach(function (t) { var o = document.createElement("option"); o.value = o.textContent = t; s.appendChild(o); });
+  }
+
+  // ---------- 2. период ----------
+  function renderMonths() {
+    var box = $("months"); box.innerHTML = "";
+    var rows = 0, n = 0;
+    state.months.forEach(function (m) {
+      var b = document.createElement("button");
+      b.className = "chip" + (state.selected[m.key] ? " on" : "");
+      b.innerHTML = "";
+      b.appendChild(document.createTextNode(m.name));
+      var sm = document.createElement("small"); sm.textContent = m.count + " стр."; b.appendChild(sm);
+      b.onclick = function () { state.selected[m.key] = !state.selected[m.key]; renderMonths(); };
+      box.appendChild(b);
+      if (state.selected[m.key]) { rows += m.count; n++; }
+    });
+    $("m-sum").textContent = n ? ("Выбрано месяцев: " + n + " · цветных строк: " + rows) : "Месяц не выбран";
+    $("btn-run").disabled = !n || state.busy;
+  }
+
+  // ---------- 3. проверка ----------
+  function run() {
+    var period = Object.keys(state.selected).filter(function (k) { return state.selected[k]; });
+    if (!period.length) return msg("run-msg", "Выберите хотя бы один месяц.");
+    msg("run-msg"); msg("res-msg");
+    setBusy(true);
+    api("POST", "/api/run", { period: period }).then(function (r) {
+      if (r.error) throw new Error(r.error);
+      waitJob(onResult, function (e) { msg("run-msg", e); });
+    }).catch(function (e) { setBusy(false); msg("run-msg", e.message); });
+  }
+
+  function onResult(r) {
+    state.result = r; state.rows = r.rows || []; state.filter = "ALL";
+    $("res-sub").textContent = "· " + r.period.join(", ") + " · строк: " + r.total + " · фактур прочитано: " + r.invoices;
+    var cards = $("cards"); cards.innerHTML = "";
+    ORDER.forEach(function (k) {
+      var c = document.createElement("button");
+      c.className = "stat " + STATUS[k].cls; c.dataset.k = k;
+      c.innerHTML = "<b></b><span></span>";
+      c.querySelector("b").textContent = (r.counts[k] || 0);
+      c.querySelector("span").textContent = STATUS[k].short;
+      c.onclick = function () { setFilter(state.filter === k ? "ALL" : k); $("table-card").scrollIntoView({ behavior: "smooth" }); };
+      cards.appendChild(c);
+    });
+    show("res-card", true); show("table-card", true);
+    var notes = [];
+    if (r.excel_error) msg("res-msg", r.excel_error, "err");
+    else if (r.bad_pdfs && r.bad_pdfs.length) msg("res-msg", "Не прочитаны PDF: " + r.bad_pdfs.map(function (b) { return b.file + " — " + b.error; }).join("; "), "warn");
+    else msg("res-msg", "Готово. Результаты записаны в копию Excel (колонки AV…BM) и в полный отчёт.", "ok");
+    $("open-excel").disabled = !r.excel;
+    renderFilters(); renderTable();
+    $("res-card").scrollIntoView({ behavior: "smooth" });
+  }
+
+  // ---------- таблица ----------
+  function setFilter(k) { state.filter = k; renderFilters(); renderTable(); }
+
+  function renderFilters() {
+    var f = $("filters"); f.innerHTML = "";
+    var counts = {}; state.rows.forEach(function (r) { counts[r.status] = (counts[r.status] || 0) + 1; });
+    var list = [["ALL", "Все", state.rows.length]].concat(ORDER.filter(function (k) { return counts[k]; })
+      .map(function (k) { return [k, STATUS[k].short, counts[k]]; }));
+    list.forEach(function (it) {
+      var b = document.createElement("button");
+      b.className = "chip" + (state.filter === it[0] ? " on" : "");
+      b.textContent = it[1] + " · " + it[2];
+      b.onclick = function () { setFilter(it[0]); };
+      f.appendChild(b);
+    });
+    document.querySelectorAll(".stat").forEach(function (c) { c.classList.toggle("active", c.dataset.k === state.filter); });
+  }
+
+  function renderTable() {
+    var q = $("search").value.trim().toLowerCase();
+    var tb = $("tbody"); tb.innerHTML = "";
+    var shown = 0;
+    state.rows.forEach(function (r) {
+      if (state.filter !== "ALL" && r.status !== state.filter) return;
+      if (q && (r.code + " " + r.name + " " + r.num + " " + r.supplier + " " + r.invoice + " " + r.rn).toLowerCase().indexOf(q) < 0) return;
+      shown++;
+      var tr = document.createElement("tr");
+      var st = STATUS[r.status] || { cls: "warn", short: r.status };
+      var label = r.status === "OK" ? "OK, замечание" : st.short;
+      var cells = [null, String(r.rn), r.code, r.name, r.num, r.invoice || "—", r.short || ""];
+      cells.forEach(function (v, i) {
+        var td = document.createElement("td");
+        if (i === 0) { var s = document.createElement("span"); s.className = "st " + (r.status === "OK" ? "warn" : st.cls); s.textContent = label; td.appendChild(s); }
+        else td.textContent = v;
+        if (i === 1) td.className = "n";
+        if (i === 2) td.className = "code";
+        tr.appendChild(td);
+      });
+      tr.onclick = function () {
+        var nx = tr.nextSibling;
+        if (nx && nx.classList && nx.classList.contains("details")) { nx.remove(); return; }
+        tb.insertBefore(details(r), tr.nextSibling);
+      };
+      tb.appendChild(tr);
+    });
+    $("t-count").textContent = "· показано " + shown + " из " + state.rows.length;
+    if (!shown) {
+      var tr = document.createElement("tr"), td = document.createElement("td");
+      td.colSpan = 7; td.className = "empty";
+      td.textContent = state.rows.length ? "Ничего не найдено по фильтру." : "Проблемных строк нет 🎉";
+      tr.appendChild(td); tb.appendChild(tr);
+    }
+  }
+
+  function details(r) {
+    var tr = document.createElement("tr"); tr.className = "details";
+    var td = document.createElement("td"); td.colSpan = 7; td.className = "det";
+    var who = document.createElement("div");
+    who.textContent = (r.supplier || "") + (r.invoice ? " · " + r.invoice : "");
+    who.style.color = "var(--muted)";
+    td.appendChild(who);
+    var ul = document.createElement("ul");
+    r.notes.forEach(function (n) { var li = document.createElement("li"); li.textContent = n; ul.appendChild(li); });
+    td.appendChild(ul);
+    var g = document.createElement("div"); g.className = "cmp";
+    var add = function (t, cls) { var d = document.createElement("div"); d.textContent = t; if (cls) d.className = cls; g.appendChild(d); };
+    ["", "Кол-во", "Цена", "Сумма", "Ед."].forEach(function (h) { add(h, "h"); });
+    add("Excel", "h"); add(fmt(r.excel[0], 3)); add(fmt(r.excel[1])); add(fmt(r.excel[2])); add(r.excel[3] || "—");
+    if (r.fact) { add("Фактура", "h"); add(fmt(r.fact[0], 3)); add(fmt(r.fact[1])); add(fmt(r.fact[2])); add(r.fact[3] || "—"); }
+    td.appendChild(g);
+    tr.appendChild(td);
+    return tr;
+  }
+
+  // ---------- кнопки ----------
+  $("btn-pick").onclick = function () {
+    setBusy(true); msg("scan-msg", "Откроется окно выбора папки (оно может быть позади браузера)…", "warn");
+    api("POST", "/api/pick-folder").then(function (r) {
+      setBusy(false);
+      if (r.cancelled) { msg("scan-msg"); return; }
+      $("folder").value = r.folder; scan();
+    }).catch(function (e) {
+      setBusy(false);
+      msg("scan-msg", "Окно выбора папки не открылось (" + e.message + "). Вставьте путь в поле и нажмите «Прочитать».");
+    });
+  };
+  $("btn-scan").onclick = function () { scan(); };
+  $("folder").addEventListener("keydown", function (e) { if (e.key === "Enter") scan(); });
+  $("btn-excel").onclick = function () { state.excel = $("excel-select").value; scan({ excel: state.excel }); };
+  $("btn-scan").addEventListener("click", function () { state.excel = undefined; });
+  $("btn-sheet").onclick = function () { scan({ excel: state.excel || undefined, sheet: $("sheet-select").value }); };
+  $("m-last").onclick = function () { state.selected = {}; if (state.months.length) state.selected[state.months[state.months.length - 1].key] = true; renderMonths(); };
+  $("m-all").onclick = function () { state.selected = {}; state.months.forEach(function (m) { state.selected[m.key] = true; }); renderMonths(); };
+  $("m-none").onclick = function () { state.selected = {}; renderMonths(); };
+  $("btn-run").onclick = run;
+  $("search").addEventListener("input", renderTable);
+  function openIt(what) {
+    api("POST", "/api/open", { what: what }).then(function () {
+      msg("res-msg", what === "excel" ? "Excel открывается…" : "Отчёт открывается…", "ok");
+    }).catch(function (e) { msg("res-msg", e.message); });
+  }
+  $("open-excel").onclick = function () { openIt("excel"); };
+  $("open-report").onclick = function () { openIt("report"); };
+  $("btn-quit").onclick = function () {
+    if (state.busy && !confirm("Идёт проверка. Всё равно завершить?")) return;
+    api("POST", "/api/quit").catch(function () {}).then(function () {
+      document.body.innerHTML = '<main style="text-align:center;padding-top:120px"><h1>Программа завершена</h1>' +
+        '<p class="sub">Это окно можно закрыть. Чтобы начать снова — запустите start.pyw.</p></main>';
+    });
+  };
+
+  // сердцебиение: пока страница открыта, сервер не закрывается
+  setInterval(function () { api("POST", "/api/heartbeat").catch(function () {}); }, 60000);
+
+  // ---------- старт ----------
+  api("GET", "/api/state").then(function (s) {
+    $("folder").value = s.folder || "";
+    if (s.libs_error) {
+      $("libs").textContent = s.libs_error; show("libs", true);
+      ["btn-pick", "btn-scan"].forEach(function (id) { $(id).disabled = true; });
+      return;
+    }
+    scan();
+  }).catch(function (e) { msg("scan-msg", e.message); });
+
+  // ---------- звёзды ----------
+  (function () {
+    var cv = $("stars"), ctx = cv.getContext("2d"), list = [], W, H;
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    function resize() {
+      var d = Math.min(window.devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
+      cv.width = W * d; cv.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0);
+      list = []; for (var i = 0; i < W * H / 4500; i++) list.push({ x: Math.random() * W, y: Math.random() * H,
+        r: Math.random() * 1.2 + .2, a: Math.random() * 6.3, s: Math.random() * .02 + .004,
+        c: Math.random() < .75 ? "255,255,255" : (Math.random() < .5 ? "165,243,252" : "240,171,252") });
+    }
+    function frame() {
+      ctx.clearRect(0, 0, W, H);
+      list.forEach(function (s) { s.a += s.s; ctx.fillStyle = "rgba(" + s.c + "," + (.3 + .7 * Math.abs(Math.sin(s.a))).toFixed(2) + ")";
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill(); });
+      if (!reduce) requestAnimationFrame(frame);
+    }
+    resize(); addEventListener("resize", function () { resize(); if (reduce) frame(); }); frame();
+  })();
+})();
+</script>
+</body>
+</html>

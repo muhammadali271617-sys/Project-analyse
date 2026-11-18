@@ -2,7 +2,7 @@
 Запись результатов сверки в КОПИЮ Excel-файла.
 
 Исходный файл не меняется. В копии меняются только:
-  * лист проверки — добавляются колонки AV…BJ в проверенных строках и заголовки в строке 2;
+  * лист проверки — добавляются колонки AV…BM в проверенных строках и заголовки в строке 2;
   * styles.xml — добавляются несколько стилей (цвета статусов, проценты, числа).
 Всё остальное (формулы, условное форматирование, фильтры, другие листы, картинки)
 копируется байт в байт — книгу не пересохраняет никакая библиотека.
@@ -17,19 +17,22 @@ FIRST_COL = 48  # AV
 HEADERS = [
     ("AV", "Сверка: статус", 18),
     ("AW", "Сверка: описание", 90),
-    ("AX", "Название в фактуре", 45),
-    ("AY", "Название совпадает", 12),
-    ("AZ", "Похожесть названия", 11),
-    ("BA", "Приходов кода (все)", 11),
-    ("BB", "Мин. цена кода", 15),
-    ("BC", "Макс. цена кода", 15),
-    ("BD", "Средняя цена кода", 15),
-    ("BE", "Медиана цены кода", 15),
-    ("BF", "Цена строки от медианы", 12),
-    ("BG", "Фактура (файл, позиция)", 22),
-    ("BH", "Кол-во в фактуре", 13),
-    ("BI", "Цена в фактуре (без НДС)", 15),
-    ("BJ", "Сумма в фактуре (без НДС)", 17),
+    ("AX", "Проблема (коротко)", 26),
+    ("AY", "Название в фактуре", 45),
+    ("AZ", "Название совпадает", 12),
+    ("BA", "Похожесть названия", 11),
+    ("BB", "Приходов кода (все)", 11),
+    ("BC", "Мин. цена кода", 15),
+    ("BD", "Макс. цена кода", 15),
+    ("BE", "Средняя цена кода", 15),
+    ("BF", "Медиана цены кода", 15),
+    ("BG", "Цена строки от медианы", 12),
+    ("BH", "Фактура (файл, позиция)", 22),
+    ("BI", "Ед. изм. в фактуре", 14),
+    ("BJ", "Кол-во в фактуре", 13),
+    ("BK", "Цена в фактуре (без НДС)", 15),
+    ("BL", "Сумма в фактуре (без НДС)", 17),
+    ("BM", "Проверка (H=BJ, I=BK, J=BL)", 13),
 ]
 LAST_COL = FIRST_COL + len(HEADERS) - 1  # BJ = 62
 
@@ -157,6 +160,22 @@ STATUS_STYLE = {"OK": "ok", "ОШИБКА": "bad", "ПЕРЕПУТАНЫ СТР�
                 "ПРОВЕРИТЬ": "warn", "НЕТ ФАКТУРЫ": "none"}
 
 
+def xl_round(x, nd=2):
+    """Округление как ОКРУГЛ в Excel (0,5 — от нуля)."""
+    from decimal import Decimal, ROUND_HALF_UP
+    return Decimal(repr(float(x))).quantize(Decimal(1).scaleb(-nd), rounding=ROUND_HALF_UP)
+
+
+def c_check(rn, x, it, st):
+    """Формула =И(ОКРУГЛ(H;2)=ОКРУГЛ(BJ;2);ОКРУГЛ(I;2)=ОКРУГЛ(BK;2);ОКРУГЛ(J;2)=ОКРУГЛ(BL;2))
+    с уже посчитанным значением, чтобы ИСТИНА/ЛОЖЬ было видно сразу."""
+    f = (f"AND(ROUND(H{rn},2)=ROUND(BJ{rn},2),ROUND(I{rn},2)=ROUND(BK{rn},2),"
+         f"ROUND(J{rn},2)=ROUND(BL{rn},2))")
+    pairs = [(x.get("H"), it.get("qty")), (x.get("I"), it.get("price")), (x.get("J"), it.get("sum"))]
+    val = all(xl_round(a or 0) == xl_round(b or 0) for a, b in pairs)
+    return f'<c r="BM{rn}" s="{st}" t="b"><f>{f}</f><v>{1 if val else 0}</v></c>'
+
+
 def row_cells(rn, r, stats, S):
     m, x = r["match"], r["row"]
     cells = {}
@@ -174,28 +193,33 @@ def row_cells(rn, r, stats, S):
     notes += [f"⚠ {w}" for w in r["warn"]]
     if notes:
         put("AW", c_str, " | ".join(notes), "text")
+    if r.get("short"):
+        put("AX", c_str, r["short"], "text")
 
     it = m["item"] if m else None
     if it:
-        put("AX", c_str, it["name"], "text")
-        put("AY", c_bool, m["sim"] >= SIM_TRUE, "text")
-        put("AZ", c_num, m["sim"], "pct")
-        put("BG", c_str, f"{r['inv']['file']}, поз. {it['no']}", "text")
+        put("AY", c_str, it["name"], "text")
+        put("AZ", c_bool, m["sim"] >= SIM_TRUE, "text")
+        put("BA", c_num, m["sim"], "pct")
+        put("BH", c_str, f"{r['inv']['file']}, поз. {it['no']}", "text")
+        if it.get("unit"):
+            put("BI", c_str, it["unit"], "text")
         if it["qty"] is not None:
-            put("BH", c_num, it["qty"], "num")
+            put("BJ", c_num, it["qty"], "num")
         if it["price"] is not None:
-            put("BI", c_num, it["price"], "num")
+            put("BK", c_num, it["price"], "num")
         if it["sum"] is not None:
-            put("BJ", c_num, it["sum"], "num")
+            put("BL", c_num, it["sum"], "num")
+        cells[col_idx("BM")] = c_check(rn, x, it, S["text"])
 
     if stats:
-        put("BA", c_num, stats["n"], "int")
-        put("BB", c_num, stats["min"], "num")
-        put("BC", c_num, stats["max"], "num")
-        put("BD", c_num, stats["avg"], "num")
-        put("BE", c_num, stats["med"], "num")
+        put("BB", c_num, stats["n"], "int")
+        put("BC", c_num, stats["min"], "num")
+        put("BD", c_num, stats["max"], "num")
+        put("BE", c_num, stats["avg"], "num")
+        put("BF", c_num, stats["med"], "num")
         if x.get("AL") and stats["med"]:
-            put("BF", c_num, x["AL"] / stats["med"] - 1, "pct")
+            put("BG", c_num, x["AL"] / stats["med"] - 1, "pct")
     return cells
 
 
