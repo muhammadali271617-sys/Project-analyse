@@ -255,8 +255,19 @@
         <p class="sub">Цветные строки Excel ↔ PDF счёт-фактуры Didox. Всё работает на этом компьютере.</p>
       </div>
     </div>
-    <button class="btn-quit" id="btn-quit" title="Остановить программу">⏻ Завершить</button>
+    <button class="btn-quit" id="btn-quit" title="Остановить программу">✕ Завершить</button>
   </header>
+
+  <section class="card hidden" id="as-file">
+    <h2>☀ Программа ещё не запущена</h2>
+    <p style="margin:0 0 10px">Этот файл — только окно программы. Открывать нужно не <b>start_page.html</b>,
+      а саму программу:</p>
+    <ol style="margin:0 0 12px 20px; padding:0; line-height:1.8">
+      <li>в папке с программой дважды щёлкните <b>«Запустить сверку.bat»</b> (или <b>start.pyw</b>);</li>
+      <li>страница откроется сама, по адресу <b>http://127.0.0.1:8770</b>.</li>
+    </ol>
+    <div class="hint" id="as-file-wait">Ищу запущенную программу…</div>
+  </section>
 
   <div id="libs" class="msg err hidden"></div>
 
@@ -365,6 +376,25 @@
 (function () {
   "use strict";
   var TOKEN = "{{TOKEN}}";
+  if (location.protocol === "file:" || TOKEN.indexOf("{{") === 0) {
+    // страницу открыли двойным щелчком как файл — без программы она работать не может
+    document.querySelectorAll("main > section, main > div.msg").forEach(function (el) { el.classList.add("hidden"); });
+    document.getElementById("as-file").classList.remove("hidden");
+    document.getElementById("btn-quit").classList.add("hidden");
+    var tries = 0;
+    (function look() {
+      // если программа уже запущена — переходим на её страницу
+      fetch("http://127.0.0.1:8770/api/ping", { mode: "no-cors", cache: "no-store" })
+        .then(function () { location.href = "http://127.0.0.1:8770/"; })
+        .catch(function () {
+          tries++;
+          document.getElementById("as-file-wait").textContent =
+            "Программа не найдена. Как только запустите её, эта страница сама перейдёт к ней" + ".".repeat(tries % 4);
+          setTimeout(look, 2500);
+        });
+    })();
+    return;
+  }
   var $ = function (id) { return document.getElementById(id); };
   var STATUS = {
     "ПЕРЕПУТАНЫ СТРОКИ": { cls: "swap", short: "Перепутаны" },
