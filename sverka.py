@@ -197,12 +197,30 @@ COLS = {k: col(k) for k in ["B", "C", "F", "G", "H", "I", "J", "O", "Q", "R", "Z
                             "AM", "AO", "AP", "AH"]}
 
 
-def find_work_sheet(wb):
-    for name in wb.sheetnames:
-        n = name.lower().strip()
-        if n.endswith("_проверка") or n.endswith("_разницалар"):
-            return name
-    return None
+def work_sheets(sheetnames):
+    """Все листы вида «<месяц>_проверка» или «<месяц>_разницалар» (регистр не важен)."""
+    return [n for n in sheetnames
+            if n.lower().strip().endswith("_проверка") or n.lower().strip().endswith("_разницалар")]
+
+
+def choose_work_sheet(sheetnames, arg=None, ask=input):
+    found = work_sheets(sheetnames)
+    if arg:
+        if arg not in sheetnames:
+            sys.exit(f"Лист «{arg}» не найден. Листы: {', '.join(sheetnames)}")
+        return arg
+    if not found:
+        sys.exit("Не найден лист «<месяц>_проверка» или «<месяц>_разницалар». Листы: " + ", ".join(sheetnames))
+    if len(found) == 1:
+        return found[0]
+    print("\nВ книге несколько листов для проверки:")
+    for i, n in enumerate(found, 1):
+        print(f"  {i}. {n}")
+    while True:
+        a = ask("Какой лист проверять? Введите номер: ").strip()
+        if a.isdigit() and 1 <= int(a) <= len(found):
+            return found[int(a) - 1]
+        print(f"Введите число от 1 до {len(found)}")
 
 
 def find_values_sheet(wb):
@@ -415,6 +433,7 @@ def main():
     ap.add_argument("folder", nargs="?", default=".", help="папка, где лежат Excel и PDF-фактуры")
     ap.add_argument("--excel", help="путь к Excel (если в папке их несколько)")
     ap.add_argument("--period", help="месяцы: 2026-10  или  2026-09,2026-10  или  все")
+    ap.add_argument("--sheet", help="имя листа, если в книге их несколько")
     ap.add_argument("-o", "--output", help="куда сохранить HTML-отчёт")
     ap.add_argument("--excel-out", help="куда сохранить копию Excel с результатами")
     ap.add_argument("--no-excel", action="store_true", help="не создавать копию Excel")
@@ -435,9 +454,7 @@ def main():
 
     print(f"Excel: {xlsx.name} — открываю (большой файл, подождите)…")
     wb = openpyxl.load_workbook(xlsx, read_only=True, data_only=True)
-    ws_name = find_work_sheet(wb)
-    if not ws_name:
-        sys.exit("Не найден лист «<месяц>_проверка» или «<месяц>_разницалар». Листы: " + ", ".join(wb.sheetnames))
+    ws_name = choose_work_sheet(wb.sheetnames, args.sheet)
     print(f"Рабочий лист: {ws_name}")
 
     rows = []
