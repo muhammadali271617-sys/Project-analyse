@@ -241,6 +241,51 @@ def sheet_path(z, sheet_name):
     raise ValueError(f"Лист «{sheet_name}» не найден внутри файла")
 
 
+F_RX = re.compile(r"<f\b([^>]*?)(?:/>|>([^<]*)</f>)")
+
+
+def unshare_formulas(sheet, cleared_rows):
+    """«Общая» (протянутая) формула хранится полностью только в первой ячейке, остальные
+    ячейки ссылаются на неё по номеру si. Если первая ячейка попадает в очищаемую область
+    (AV…BM проверенных строк), ссылки повисают, и Excel пишет «ошибка в части содержимого».
+    Поэтому такие ссылки заменяются обычными формулами, пересчитанными для своей ячейки."""
+    from xml.sax.saxutils import unescape
+    from openpyxl.formula.translate import Translator
+
+    masters, broken = {}, set()
+    for cm in CELL_RX.finditer(sheet):
+        fm = F_RX.search(cm.group(0))
+        if not fm or 't="shared"' not in fm.group(1) or "ref=" not in fm.group(1):
+            continue
+        si = re.search(r'\bsi="(\d+)"', fm.group(1)).group(1)
+        ref = re.match(r'<c\b[^>]*?\br="([A-Z]+)(\d+)"', cm.group(0))
+        col, row = col_idx(ref.group(1)), int(ref.group(2))
+        masters[si] = (f"{ref.group(1)}{row}", unescape(fm.group(2) or "", {"&quot;": '"', "&apos;": "'"}))
+        if FIRST_COL <= col <= LAST_COL and row in cleared_rows:
+            broken.add(si)
+    if not broken:
+        return sheet, 0
+
+    count = 0
+
+    def fix_cell(cm):
+        nonlocal count
+        cell = cm.group(0)
+        fm = F_RX.search(cell)
+        if not fm or 't="shared"' not in fm.group(1):
+            return cell
+        si = re.search(r'\bsi="(\d+)"', fm.group(1)).group(1)
+        if si not in broken:
+            return cell
+        origin, formula = masters[si]
+        ref = re.match(r'<c\b[^>]*?\br="([A-Z]+\d+)"', cell).group(1)
+        text = Translator("=" + formula, origin=origin).translate_formula(ref)[1:]
+        count += 1
+        return cell[:fm.start()] + f"<f>{xml_text(text)}</f>" + cell[fm.end():]
+
+    return CELL_RX.sub(fix_cell, sheet), count
+
+
 def write_copy(src, dst, sheet_name, results, hist_stats_fn):
     with zipfile.ZipFile(src) as z:
         sp = sheet_path(z, sheet_name)
@@ -252,6 +297,7 @@ def write_copy(src, dst, sheet_name, results, hist_stats_fn):
             rn = r["row"]["rn"]
             new[rn] = row_cells(rn, r, hist_stats_fn(r["row"]["code"]), S)
 
+        sheet, _ = unshare_formulas(sheet, set(new))
         found = set()
 
         def repl(m):
