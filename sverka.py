@@ -32,7 +32,7 @@ import pdfplumber
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
 # Меняется при каждом обновлении программы — видно на странице, в отчёте и в Excel
-VERSION = "2026-11-18 · v7"
+VERSION = "2026-11-18 · v8"
 
 # ---------------------------------------------------------------- допуски
 TOL_QTY = 0.001
@@ -517,10 +517,11 @@ def _say(progress, text, done=None, total=None):
 
 
 def find_excels(folder):
-    """Excel-файлы в папке (без временных ~$ и без уже проверенных копий)."""
+    """Excel-файлы в папке (без временных ~$, проверенных копий и книг «Ошибки по бухгалтерам»)."""
     return sorted(p for p in Path(folder).iterdir()
                   if p.is_file() and p.suffix.lower() in (".xlsx", ".xlsm")
-                  and not p.name.startswith("~$") and "проверено" not in p.name.lower())
+                  and not p.name.startswith("~$") and "проверено" not in p.name.lower()
+                  and not p.name.lower().startswith("ошибки_по_бухгалтерам"))
 
 
 def is_open_in_excel(path):

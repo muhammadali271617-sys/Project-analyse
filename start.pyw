@@ -56,7 +56,7 @@ def check_libs():
     if missing:
         return ("Не установлены библиотеки: " + ", ".join(missing) + ". Откройте командную строку и "
                 "выполните:  py -m pip install pdfplumber openpyxl  — затем запустите программу снова.")
-    for mod in ("sverka", "excel_writer"):
+    for mod in ("sverka", "excel_writer", "po_buhgalteram"):
         if not (HERE / f"{mod}.py").exists():
             return f"Рядом с start.pyw нет файла {mod}.py. Положите все файлы программы в одну папку."
     return None
@@ -78,7 +78,8 @@ _loaded_mtimes = {}
 
 
 def _mtimes():
-    return {n: (HERE / f"{n}.py").stat().st_mtime for n in ("sverka", "excel_writer") if (HERE / f"{n}.py").exists()}
+    return {n: (HERE / f"{n}.py").stat().st_mtime for n in ("sverka", "excel_writer", "po_buhgalteram")
+            if (HERE / f"{n}.py").exists()}
 
 
 def reload_if_changed():
@@ -90,8 +91,9 @@ def reload_if_changed():
     now = _mtimes()
     if now != _loaded_mtimes:
         import importlib
-        if "excel_writer" in sys.modules:
-            importlib.reload(sys.modules["excel_writer"])
+        for mod in ("excel_writer", "po_buhgalteram"):
+            if mod in sys.modules:
+                importlib.reload(sys.modules[mod])
         sverka = importlib.reload(sverka)
         _loaded_mtimes.clear()
         _loaded_mtimes.update(now)
@@ -116,6 +118,9 @@ class State:
         self.data = None          # результат load_excel (кэш для выбранного Excel)
         self.data_key = None
         self.last = None          # результат run_check
+        self.acc_src = None       # проверенная копия, из которой делаем книгу по бухгалтерам
+        self.acc_sheet = None
+        self.acc_path = None      # созданная книга «Ошибки по бухгалтерам»
         self.job = {"state": "idle"}
         self.last_seen = time.time()
 
@@ -236,6 +241,60 @@ def do_run(period):
     return job
 
 
+def checked_copy():
+    """Проверенная копия Excel: после проверки — её путь, иначе ищем «…_проверено.xlsx» в папке."""
+    if ST.last and ST.last.get("excel") and Path(ST.last["excel"]).exists():
+        return Path(ST.last["excel"])
+    folder = Path(ST.folder)
+    found = sorted((p for p in folder.glob("*_проверено.xlsx") if not p.name.startswith("~$")),
+                   key=lambda p: p.stat().st_mtime, reverse=True)
+    if not found:
+        raise sverka.CheckError("Нет проверенной копии «…_проверено.xlsx» — сначала нажмите «Проверить».")
+    return found[0]
+
+
+def do_acc_scan():
+    src = checked_copy()
+
+    def job(progress):
+        import po_buhgalteram as pb
+        progress(f"Читаю «{src.name}»…")
+        with pb.zipfile.ZipFile(src) as z:
+            names = [n for n, _, _ in pb.sheet_parts(z)]
+        try:
+            sheet = pb.find_check_sheet(names, ST.data["ws_name"] if ST.data else None)
+        except SystemExit as e:
+            raise sverka.CheckError(str(e))
+        avail = pb.available_months(pb.read_candidates(src, sheet))
+        ST.acc_src, ST.acc_sheet = src, sheet
+        return {"file": src.name, "sheet": sheet,
+                "months": [{"key": k, "name": pb.month_name(k), "count": n} for k, n in avail.items()]}
+    return job
+
+
+def do_acc_build(months):
+    months = set(months or [])
+    if not months:
+        raise sverka.CheckError("Выберите хотя бы один месяц.")
+    if not ST.acc_src:
+        raise sverka.CheckError("Сначала откройте шаг «Ошибки по бухгалтерам» ещё раз.")
+    src, sheet = ST.acc_src, ST.acc_sheet
+
+    def job(progress):
+        import po_buhgalteram as pb
+        dst = pb.output_name(src, months)
+        if dst.exists() and sverka.is_open_in_excel(dst):
+            raise sverka.CheckError(f"Файл «{dst.name}» открыт в Excel. Закройте его и попробуйте снова.")
+        progress("Собираю листы по бухгалтерам…")
+        try:
+            dst, counts, problems = pb.make_book(src, sheet, months, dst)
+        except ValueError as e:
+            raise sverka.CheckError(str(e))
+        ST.acc_path = dst
+        return {"file": dst.name, "counts": counts, "total": sum(n for _, n in counts), "problems": problems[:20]}
+    return job
+
+
 def open_file(path):
     path = str(path)
     if os.name == "nt":
@@ -340,9 +399,21 @@ class Handler(BaseHTTPRequestHandler):
             if self.path == "/api/run":
                 ok = start_job("run", do_run(data.get("period")))
                 return self.send_json({"started": ok} if ok else {"error": "Уже выполняется другая операция."})
+            if self.path == "/api/acc-scan":
+                ok = start_job("acc-scan", do_acc_scan())
+                return self.send_json({"started": ok} if ok else {"error": "Уже выполняется другая операция."})
+            if self.path == "/api/acc-build":
+                ok = start_job("acc-build", do_acc_build(data.get("months")))
+                return self.send_json({"started": ok} if ok else {"error": "Уже выполняется другая операция."})
             if self.path == "/api/open":
                 what = data.get("what")
                 last = ST.last
+                if what == "acc":
+                    path = ST.acc_path
+                    if not path or not Path(path).exists():
+                        return self.send_json({"error": "Книга по бухгалтерам ещё не создана."}, 400)
+                    open_file(path)
+                    return self.send_json({"ok": True})
                 if not last:
                     return self.send_json({"error": "Сначала выполните проверку."}, 400)
                 path = last["excel"] if what == "excel" else last["report"]

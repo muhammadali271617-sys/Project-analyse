@@ -6,123 +6,180 @@
 <title>Сверка с фактурами</title>
 <style>
   :root {
-    --space: #04050d; --text: #e9ecff; --muted: #9aa3c7; --line: rgba(160,150,255,.2);
-    --glass: rgba(12,14,38,.62); --glass2: rgba(255,255,255,.04);
-    --violet: #8b5cf6; --blue: #3b82f6; --cyan: #22d3ee; --pink: #ec4899;
-    --ok: #34d399; --bad: #fb7185; --warn: #fbbf24; --none: #94a3b8; --swap: #f472b6;
+    --text: #123524; --muted: #4b6b5a; --line: rgba(21,128,61,.18);
+    --card: rgba(255,255,255,.80); --card2: rgba(240,253,244,.85);
+    --leaf: #22c55e; --leaf-d: #15803d; --lime: #84cc16; --sun: #facc15; --sun-d: #f59e0b;
+    --ok: #15803d; --bad: #dc2626; --warn: #b45309; --none: #64748b; --swap: #db2777;
   }
   * { box-sizing: border-box; }
-  html { background: var(--space); }
+  html { background: #bfe8ff; }
   body { margin: 0; min-height: 100vh; color: var(--text);
     font: 15px/1.5 "Segoe UI", system-ui, Arial, sans-serif;
-    background:
-      radial-gradient(1100px 600px at 10% -10%, rgba(139,92,246,.33), transparent 60%),
-      radial-gradient(900px 500px at 95% 10%, rgba(236,72,153,.2), transparent 60%),
-      radial-gradient(1000px 700px at 60% 110%, rgba(59,130,246,.25), transparent 60%), var(--space);
-    background-attachment: fixed; }
-  #stars { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-  main { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 28px 16px 70px; }
+    background: linear-gradient(180deg, #6ec3ff 0%, #a9dcff 28%, #e3f6ff 52%, #fff6d8 76%, #fdeab0 100%);
+    background-attachment: fixed; overflow-x: hidden; }
+
+  /* ---- солнце ---- */
+  .sun { position: fixed; top: -90px; right: -90px; width: 420px; height: 420px; z-index: 0; pointer-events: none; }
+  .sun .rays { position: absolute; inset: 0; border-radius: 50%;
+    background: repeating-conic-gradient(from 0deg, rgba(255,236,140,.55) 0deg 6deg, rgba(255,236,140,0) 6deg 18deg);
+    -webkit-mask: radial-gradient(circle, transparent 28%, #000 30%, #000 52%, transparent 70%);
+            mask: radial-gradient(circle, transparent 28%, #000 30%, #000 52%, transparent 70%);
+    animation: spin 90s linear infinite; }
+  .sun .glow { position: absolute; inset: 60px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,240,170,.95) 0%, rgba(255,214,90,.55) 35%, rgba(255,200,60,0) 70%);
+    animation: pulse 6s ease-in-out infinite; }
+  .sun .core { position: absolute; inset: 150px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 38%, #fffbe6 0%, #ffe066 38%, #fbbf24 75%, #f59e0b 100%);
+    box-shadow: 0 0 60px 20px rgba(253,224,71,.65), 0 0 140px 60px rgba(253,224,71,.35); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.08); opacity: 1; } }
+
+  /* ---- облака ---- */
+  .cloud { position: fixed; z-index: 0; pointer-events: none; width: 220px; height: 60px; border-radius: 60px;
+    background: rgba(255,255,255,.85); filter: blur(1px); animation: drift linear infinite; }
+  .cloud::before, .cloud::after { content: ""; position: absolute; background: inherit; border-radius: 50%; }
+  .cloud::before { width: 100px; height: 100px; top: -50px; left: 30px; }
+  .cloud::after { width: 130px; height: 120px; top: -65px; left: 85px; }
+  .cloud.c1 { top: 90px; left: -260px; animation-duration: 140s; }
+  .cloud.c2 { top: 210px; left: -260px; transform: scale(.7); opacity: .8; animation-duration: 190s; animation-delay: -70s; }
+  .cloud.c3 { top: 40px; left: -260px; transform: scale(.5); opacity: .7; animation-duration: 230s; animation-delay: -150s; }
+  @keyframes drift { from { translate: 0 0; } to { translate: calc(100vw + 520px) 0; } }
+
+  /* ---- холмы ---- */
+  .hills { position: fixed; left: 0; right: 0; bottom: 0; height: 34vh; min-height: 200px; z-index: 0; pointer-events: none; }
+  .hills svg { width: 100%; height: 100%; display: block; }
+  #nature { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+  main { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 28px 16px 120px; }
   header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
   .brand { display: flex; align-items: center; gap: 14px; }
-  .brand svg { width: 50px; height: 50px; filter: drop-shadow(0 0 12px rgba(139,92,246,.7)); }
-  h1 { margin: 0; font-size: 30px; background: linear-gradient(90deg,#a5f3fc,#c4b5fd 45%,#f9a8d4);
+  .brand svg { width: 54px; height: 54px; filter: drop-shadow(0 4px 10px rgba(245,158,11,.45)); }
+  h1 { margin: 0; font-size: 31px; letter-spacing: .3px;
+    background: linear-gradient(90deg, #15803d, #16a34a 40%, #ca8a04);
     -webkit-background-clip: text; background-clip: text; color: transparent; }
   .sub { color: var(--muted); margin: 0; font-size: 14px; }
-  .card { background: var(--glass); border: 1px solid var(--line); border-radius: 18px; padding: 22px;
-    margin-bottom: 18px; backdrop-filter: blur(8px); box-shadow: 0 20px 60px rgba(0,0,0,.4); }
-  h2 { margin: 0 0 14px; font-size: 19px; display: flex; align-items: center; gap: 10px; }
-  .step { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--violet), var(--blue)); font-size: 14px; font-weight: 700; }
+  .card { background: var(--card); border: 1px solid rgba(255,255,255,.9); border-radius: 20px; padding: 22px;
+    margin-bottom: 18px; backdrop-filter: blur(10px) saturate(140%);
+    box-shadow: 0 10px 30px rgba(21,128,61,.12), 0 2px 0 rgba(255,255,255,.8) inset; }
+  h2 { margin: 0 0 14px; font-size: 19px; display: flex; align-items: center; gap: 10px; color: #14532d; }
+  .step { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: #fff;
+    background: linear-gradient(135deg, var(--leaf), var(--leaf-d)); font-size: 14px; font-weight: 700;
+    box-shadow: 0 3px 10px rgba(22,163,74,.35); }
   button { font: inherit; cursor: pointer; border-radius: 12px; border: 1px solid transparent;
     transition: transform .15s, box-shadow .2s, background .2s; }
   button:disabled { opacity: .45; cursor: default; transform: none !important; box-shadow: none !important; }
-  .btn { background: rgba(34,211,238,.07); color: #a5f3fc; border-color: rgba(34,211,238,.45); padding: 10px 18px; }
-  .btn:hover:not(:disabled) { background: rgba(34,211,238,.15); box-shadow: 0 0 16px rgba(34,211,238,.3); }
+  .btn { background: #fff; color: var(--leaf-d); border-color: rgba(22,163,74,.55); padding: 10px 18px; font-weight: 600; }
+  .btn:hover:not(:disabled) { background: #f0fdf4; box-shadow: 0 4px 14px rgba(22,163,74,.2); }
   .btn-big { color: #fff; font-size: 22px; font-weight: 700; padding: 16px 54px; min-width: 260px;
-    background: linear-gradient(135deg, var(--violet), var(--blue) 60%, var(--cyan));
-    box-shadow: 0 0 22px rgba(139,92,246,.55), 0 0 60px rgba(59,130,246,.22); }
-  .btn-big:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 30px rgba(139,92,246,.8), 0 0 80px rgba(34,211,238,.3); }
-  .btn-quit { background: rgba(251,113,133,.08); color: #fecdd3; border-color: rgba(251,113,133,.45); padding: 9px 16px; }
-  .btn-quit:hover { background: rgba(251,113,133,.18); }
+    background: linear-gradient(135deg, #22c55e, #16a34a 55%, #65a30d);
+    box-shadow: 0 8px 24px rgba(22,163,74,.35), 0 0 0 4px rgba(250,204,21,.25); text-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  .btn-big:hover:not(:disabled) { transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(22,163,74,.45), 0 0 0 6px rgba(250,204,21,.4); }
+  .btn-sun { color: #713f12; font-weight: 700; font-size: 18px; padding: 13px 34px;
+    background: linear-gradient(135deg, #fde047, #facc15 55%, #f59e0b); box-shadow: 0 8px 22px rgba(245,158,11,.35); }
+  .btn-sun:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(245,158,11,.5); }
+  .btn-quit { background: #fff; color: #b91c1c; border-color: rgba(220,38,38,.4); padding: 9px 16px; font-weight: 600; }
+  .btn-quit:hover { background: #fef2f2; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  input[type=text], select { font: inherit; color: var(--text); background: rgba(0,0,0,.35);
-    border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  input[type=text], select { font: inherit; color: var(--text); background: #fff;
+    border: 1px solid rgba(22,163,74,.35); border-radius: 10px; padding: 10px 12px; }
+  input[type=text]:focus, select:focus { outline: 3px solid rgba(34,197,94,.25); border-color: var(--leaf); }
   input[type=text] { flex: 1; min-width: 260px; font-family: Consolas, "Cascadia Mono", monospace; font-size: 14px; }
-  select option { background: #10122a; }
   .info { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 14px; }
-  .info div { background: var(--glass2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  .info div { background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
   .info span { display: block; color: var(--muted); font-size: 12px; }
   .info b { word-break: break-all; }
   .months { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-  .chip { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--glass2);
-    color: var(--text); user-select: none; }
+  .chip { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--text); user-select: none; }
   .chip small { color: var(--muted); margin-left: 6px; }
-  .chip.on { background: rgba(139,92,246,.28); border-color: rgba(167,139,250,.8); box-shadow: 0 0 14px rgba(139,92,246,.35); }
+  .chip.on { background: #dcfce7; border-color: #16a34a; color: #14532d; box-shadow: 0 0 0 3px rgba(34,197,94,.18); font-weight: 600; }
   .hint { color: var(--muted); font-size: 13px; margin-top: 8px; }
   .msg { margin-top: 14px; padding: 12px 16px; border-radius: 12px; border: 1px solid; }
-  .msg.err { background: rgba(251,113,133,.12); border-color: rgba(251,113,133,.45); color: #fecdd3; }
-  .msg.warn { background: rgba(251,191,36,.1); border-color: rgba(251,191,36,.4); color: #fde68a; }
-  .msg.ok { background: rgba(52,211,153,.1); border-color: rgba(52,211,153,.4); color: #a7f3d0; }
+  .msg.err { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+  .msg.warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+  .msg.ok { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
   .run { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
   .progress { flex: 1; min-width: 260px; }
   .ptext { color: var(--muted); }
-  .bar { height: 10px; background: rgba(255,255,255,.08); border-radius: 6px; overflow: hidden; margin-top: 8px; }
+  .bar { height: 10px; background: rgba(22,163,74,.12); border-radius: 6px; overflow: hidden; margin-top: 8px; }
   .bar > div { height: 100%; width: 0; border-radius: 6px; transition: width .25s;
-    background: linear-gradient(90deg, var(--violet), var(--cyan), var(--pink)); box-shadow: 0 0 12px rgba(34,211,238,.7); }
+    background: linear-gradient(90deg, #22c55e, #84cc16, #facc15); }
   .bar.indet > div { width: 35% !important; animation: indet 1.2s ease-in-out infinite; }
   @keyframes indet { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-  .stat { text-align: left; border-radius: 14px; padding: 14px 16px; background: var(--glass2);
-    border: 1px solid var(--line); color: var(--text); }
+  .stat { text-align: left; border-radius: 16px; padding: 14px 16px; background: #fff; border: 1px solid var(--line); color: var(--text); }
   .stat b { display: block; font-size: 32px; line-height: 1.1; }
   .stat span { color: var(--muted); font-size: 13px; }
-  .stat.ok b { color: var(--ok); } .stat.bad b { color: var(--bad); } .stat.swap b { color: var(--swap); }
-  .stat.warn b { color: var(--warn); } .stat.none b { color: var(--none); }
-  .stat.active { outline: 2px solid rgba(167,139,250,.9); box-shadow: 0 0 18px rgba(139,92,246,.4); }
-  .stat:hover { background: rgba(255,255,255,.07); }
+  .stat.ok { background: #f0fdf4; } .stat.ok b { color: var(--ok); }
+  .stat.bad { background: #fef2f2; } .stat.bad b { color: var(--bad); }
+  .stat.swap { background: #fdf2f8; } .stat.swap b { color: var(--swap); }
+  .stat.warn { background: #fffbeb; } .stat.warn b { color: var(--warn); }
+  .stat.none { background: #f8fafc; } .stat.none b { color: var(--none); }
+  .stat.active { outline: 3px solid rgba(22,163,74,.6); }
+  .stat:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(21,128,61,.12); }
   .opens { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
   .tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
   .tools input { min-width: 240px; }
   .filters { display: flex; gap: 6px; flex-wrap: wrap; }
   .filters .chip { padding: 6px 12px; font-size: 13px; }
-  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { padding: 9px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid rgba(160,150,255,.1); }
-  th { background: rgba(139,92,246,.16); color: #ddd6fe; position: sticky; top: 0; white-space: nowrap; }
+  th, td { padding: 9px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid #ecfdf5; }
+  th { background: #dcfce7; color: #14532d; position: sticky; top: 0; white-space: nowrap; }
   tbody tr { cursor: pointer; }
-  tbody tr:hover td { background: rgba(255,255,255,.04); }
+  tbody tr:hover td { background: #f7fee7; }
   td.n { font-family: Consolas, monospace; color: var(--muted); }
-  td.code { font-family: Consolas, monospace; color: #a5f3fc; white-space: nowrap; }
+  td.code { font-family: Consolas, monospace; color: #0f766e; white-space: nowrap; font-weight: 600; }
   .st { font-weight: 700; font-size: 12px; padding: 3px 9px; border-radius: 999px; white-space: nowrap; display: inline-block; }
-  .st.ok { background: rgba(52,211,153,.15); color: var(--ok); }
-  .st.bad { background: rgba(251,113,133,.16); color: var(--bad); }
-  .st.swap { background: rgba(244,114,182,.18); color: var(--swap); }
-  .st.warn { background: rgba(251,191,36,.15); color: var(--warn); }
-  .st.none { background: rgba(148,163,184,.16); color: var(--none); }
-  tr.details td { background: rgba(0,0,0,.25); cursor: default; }
+  .st.ok { background: #dcfce7; color: var(--ok); }
+  .st.bad { background: #fee2e2; color: var(--bad); }
+  .st.swap { background: #fce7f3; color: var(--swap); }
+  .st.warn { background: #fef3c7; color: var(--warn); }
+  .st.none { background: #f1f5f9; color: var(--none); }
+  tr.details td { background: #f7fee7; cursor: default; }
   .det ul { margin: 4px 0 0 18px; padding: 0; } .det li { margin: 3px 0; }
   .cmp { display: grid; grid-template-columns: auto repeat(4, minmax(90px, auto)); gap: 2px 16px; margin-top: 8px;
     font-family: Consolas, monospace; font-size: 13px; }
   .cmp .h { color: var(--muted); font-family: "Segoe UI", sans-serif; }
   .empty { padding: 30px; text-align: center; color: var(--muted); }
+  .acc-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; margin-top: 14px; }
+  .acc-list div { display: flex; justify-content: space-between; gap: 10px; padding: 10px 14px; border-radius: 12px;
+    background: #fff; border: 1px solid var(--line); }
+  .acc-list b { color: var(--leaf-d); }
   .hidden { display: none !important; }
-  footer { position: relative; z-index: 1; text-align: center; color: #6f78a0; font-size: 12px; margin-top: 24px; }
-  @media (max-width: 640px) { .btn-big { width: 100%; min-width: 0; } h1 { font-size: 24px; } }
+  footer { position: relative; z-index: 1; text-align: center; color: #14532d; font-size: 12px; margin-top: 24px;
+    text-shadow: 0 1px 0 rgba(255,255,255,.7); }
+  @media (max-width: 640px) { .btn-big { width: 100%; min-width: 0; } h1 { font-size: 24px; } .sun { transform: scale(.6); top: -140px; right: -140px; } }
+  @media (prefers-reduced-motion: reduce) { .sun .rays, .sun .glow, .cloud { animation: none; } }
 </style>
 </head>
 <body>
-<canvas id="stars" aria-hidden="true"></canvas>
+<div class="sun" aria-hidden="true"><div class="rays"></div><div class="glow"></div><div class="core"></div></div>
+<div class="cloud c1" aria-hidden="true"></div><div class="cloud c2" aria-hidden="true"></div><div class="cloud c3" aria-hidden="true"></div>
+<div class="hills" aria-hidden="true">
+  <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="h1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bbf7d0"/><stop offset="1" stop-color="#86efac"/></linearGradient>
+      <linearGradient id="h2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4ade80"/><stop offset="1" stop-color="#22c55e"/></linearGradient>
+      <linearGradient id="h3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16a34a"/><stop offset="1" stop-color="#15803d"/></linearGradient>
+    </defs>
+    <path fill="url(#h1)" d="M0,170 C220,90 420,120 640,150 C860,180 1080,80 1440,120 L1440,320 L0,320 Z"/>
+    <path fill="url(#h2)" d="M0,220 C200,170 380,200 600,215 C860,235 1060,160 1440,200 L1440,320 L0,320 Z"/>
+    <path fill="url(#h3)" d="M0,265 C260,235 520,275 760,262 C1000,250 1220,235 1440,255 L1440,320 L0,320 Z"/>
+  </svg>
+</div>
+<canvas id="nature" aria-hidden="true"></canvas>
 <main>
   <header>
     <div class="brand">
       <svg viewBox="0 0 64 64" aria-hidden="true">
-        <defs>
-          <radialGradient id="pg" cx="38%" cy="32%" r="70%"><stop offset="0" stop-color="#f0abfc"/><stop offset=".45" stop-color="#8b5cf6"/><stop offset="1" stop-color="#1e1b4b"/></radialGradient>
-          <linearGradient id="rg" x1="0" x2="1"><stop offset="0" stop-color="#22d3ee" stop-opacity=".2"/><stop offset=".5" stop-color="#a5f3fc"/><stop offset="1" stop-color="#22d3ee" stop-opacity=".2"/></linearGradient>
-        </defs>
-        <ellipse cx="32" cy="34" rx="30" ry="8" fill="none" stroke="url(#rg)" stroke-width="2.5" transform="rotate(-18 32 34)"/>
-        <circle cx="32" cy="32" r="17" fill="url(#pg)"/>
-        <path d="M2 34 A30 8 0 0 0 62 34" fill="none" stroke="url(#rg)" stroke-width="2.5" transform="rotate(-18 32 34)"/>
+        <defs><radialGradient id="sg" cx="40%" cy="38%" r="65%"><stop offset="0" stop-color="#fffbe6"/><stop offset=".5" stop-color="#fde047"/><stop offset="1" stop-color="#f59e0b"/></radialGradient></defs>
+        <g stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round">
+          <line x1="32" y1="3" x2="32" y2="11"/><line x1="32" y1="53" x2="32" y2="61"/><line x1="3" y1="32" x2="11" y2="32"/><line x1="53" y1="32" x2="61" y2="32"/>
+          <line x1="11.5" y1="11.5" x2="17" y2="17"/><line x1="47" y1="47" x2="52.5" y2="52.5"/><line x1="11.5" y1="52.5" x2="17" y2="47"/><line x1="47" y1="17" x2="52.5" y2="11.5"/>
+        </g>
+        <circle cx="32" cy="32" r="14" fill="url(#sg)"/>
+        <path d="M34 44 C 40 36, 50 36, 56 30 C 52 42, 44 46, 34 44 Z" fill="#22c55e"/><path d="M34 44 C 42 41, 48 37, 56 30" stroke="#15803d" stroke-width="1.5" fill="none"/>
       </svg>
       <div>
         <h1>Сверка с фактурами</h1>
@@ -209,6 +266,29 @@
     </div>
     <div class="hint">Нажмите на строку, чтобы увидеть подробности и сравнение чисел.</div>
   </section>
+  <section class="card hidden" id="acc-card">
+    <h2><span class="step">4</span> Ошибки по бухгалтерам</h2>
+    <div class="hint" style="margin-top:0">Новая книга: у каждого бухгалтера (колонка X) свой лист — точная копия листа проверки
+      только с его строками, где заполнена «Проблема» (AX). Выберите месяц или несколько.</div>
+    <div class="hint" id="acc-src"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="acc-last">Последний месяц</button>
+      <button class="btn" id="acc-all">Все месяцы</button>
+      <button class="btn" id="acc-none">Снять выбор</button>
+    </div>
+    <div class="months" id="acc-months"></div>
+    <div class="hint" id="acc-sum"></div>
+    <div class="run" style="margin-top:14px">
+      <button class="btn-sun" id="acc-build">☀ Создать книгу по бухгалтерам</button>
+      <div class="progress hidden" id="a-progress">
+        <div class="ptext" id="a-ptext">…</div>
+        <div class="bar" id="a-bar"><div id="a-pbar"></div></div>
+      </div>
+    </div>
+    <div id="acc-msg"></div>
+    <div class="acc-list" id="acc-list"></div>
+    <div class="opens hidden" id="acc-opens"><button class="btn" id="acc-open">📗 Открыть книгу по бухгалтерам</button></div>
+  </section>
 </main>
 <footer>Работает офлайн · сервер только на этом компьютере (127.0.0.1) · <span id="ver"></span></footer>
 
@@ -253,7 +333,8 @@
   function show(id, on) { $(id).classList.toggle("hidden", !on); }
   function setBusy(on) {
     state.busy = on;
-    ["btn-pick", "btn-scan", "btn-run", "btn-excel", "btn-sheet", "open-excel", "open-report"].forEach(function (id) { $(id).disabled = on; });
+    ["btn-pick", "btn-scan", "btn-run", "btn-excel", "btn-sheet", "open-excel", "open-report",
+     "acc-build", "acc-open"].forEach(function (id) { $(id).disabled = on; });
   }
 
   function fmt(x, nd) {
@@ -265,20 +346,22 @@
   }
 
   // ---------- задания с прогрессом ----------
-  function waitJob(onDone, onError) {
-    show("progress", true);
+  function waitJob(onDone, onError, pfx) {
+    pfx = pfx || "";
+    var P = function (id) { return $(pfx + id); };
+    show(pfx + "progress", true);
     (function poll() {
       api("GET", "/api/job").then(function (j) {
-        $("ptext").textContent = j.text || "…";
-        var bar = $("bar");
-        if (j.total) { bar.classList.remove("indet"); $("pbar").style.width = Math.round(100 * (j.done || 0) / j.total) + "%"; }
+        P("ptext").textContent = j.text || "…";
+        var bar = P("bar");
+        if (j.total) { bar.classList.remove("indet"); P("pbar").style.width = Math.round(100 * (j.done || 0) / j.total) + "%"; }
         else { bar.classList.add("indet"); }
         if (j.state === "running") return setTimeout(poll, 400);
-        show("progress", false);
+        show(pfx + "progress", false);
         setBusy(false);
         if (j.state === "done") onDone(j.result || {});
         else onError(j.error || "Ошибка");
-      }).catch(function (e) { show("progress", false); setBusy(false); onError(e.message); });
+      }).catch(function (e) { show(pfx + "progress", false); setBusy(false); onError(e.message); });
     })();
   }
 
@@ -317,6 +400,7 @@
     renderMonths();
     show("period-card", true); show("run-card", true);
     if (!state.months.length) msg("run-msg", "На листе нет цветных строк (Разница вне пределов) для проверки.", "warn");
+    setTimeout(accScan, 50);
   }
 
   function fillSelect(id, items) {
@@ -375,6 +459,7 @@
     $("open-excel").disabled = !r.excel;
     renderFilters(); renderTable();
     $("res-card").scrollIntoView({ behavior: "smooth" });
+    setTimeout(accScan, 50);
   }
 
   // ---------- таблица ----------
@@ -451,6 +536,65 @@
     return tr;
   }
 
+  // ---------- 4. ошибки по бухгалтерам ----------
+  var acc = { months: [], selected: {} };
+  function accScan() {
+    api("POST", "/api/acc-scan").then(function (r) {
+      if (r.error) throw new Error(r.error);
+      setBusy(true);
+      waitJob(function (res) {
+        acc.months = res.months || []; acc.selected = {};
+        if (acc.months.length) acc.selected[acc.months[acc.months.length - 1].key] = true;
+        $("acc-src").textContent = "Источник: " + res.file + " · лист «" + res.sheet + "»";
+        renderAcc(); show("acc-card", true);
+        if (!acc.months.length) msg("acc-msg", "В проверенной копии нет строк с заполненной «Проблемой» (AX).", "warn");
+      }, function () { show("acc-card", false); }, "a-");
+    }).catch(function () { show("acc-card", false); });
+  }
+  function renderAcc() {
+    var box = $("acc-months"); box.innerHTML = ""; var n = 0, rows = 0;
+    acc.months.forEach(function (m) {
+      var b = document.createElement("button");
+      b.className = "chip" + (acc.selected[m.key] ? " on" : "");
+      b.appendChild(document.createTextNode(m.name));
+      var sm = document.createElement("small"); sm.textContent = m.count + " стр."; b.appendChild(sm);
+      b.onclick = function () { acc.selected[m.key] = !acc.selected[m.key]; renderAcc(); };
+      box.appendChild(b);
+      if (acc.selected[m.key]) { n++; rows += m.count; }
+    });
+    $("acc-sum").textContent = n ? ("Выбрано месяцев: " + n + " · строк с проблемами: " + rows) : "Месяц не выбран";
+    $("acc-build").disabled = !n || state.busy;
+  }
+  function accBuild() {
+    var months = Object.keys(acc.selected).filter(function (k) { return acc.selected[k]; });
+    if (!months.length) return msg("acc-msg", "Выберите хотя бы один месяц.");
+    msg("acc-msg"); $("acc-list").innerHTML = ""; show("acc-opens", false);
+    setBusy(true);
+    api("POST", "/api/acc-build", { months: months }).then(function (r) {
+      if (r.error) throw new Error(r.error);
+      waitJob(function (res) {
+        var list = $("acc-list");
+        res.counts.forEach(function (c) {
+          var d = document.createElement("div"), a = document.createElement("span"), b = document.createElement("b");
+          a.textContent = "👤 " + c[0]; b.textContent = c[1]; d.appendChild(a); d.appendChild(b); list.appendChild(d);
+        });
+        var t = document.createElement("div"); t.innerHTML = "<span>Всего</span><b></b>";
+        t.querySelector("b").textContent = res.total; t.style.fontWeight = "700"; list.appendChild(t);
+        if (res.problems && res.problems.length) msg("acc-msg", "Книга создана, но проверка нашла замечания: " + res.problems.join("; "), "warn");
+        else msg("acc-msg", "Готово: «" + res.file + "». Листов: " + res.counts.length + ". Проверка: всё в порядке.", "ok");
+        show("acc-opens", true);
+      }, function (e) { msg("acc-msg", e); }, "a-");
+    }).catch(function (e) { setBusy(false); msg("acc-msg", e.message); });
+  }
+  $("acc-last").onclick = function () { acc.selected = {}; if (acc.months.length) acc.selected[acc.months[acc.months.length - 1].key] = true; renderAcc(); };
+  $("acc-all").onclick = function () { acc.selected = {}; acc.months.forEach(function (m) { acc.selected[m.key] = true; }); renderAcc(); };
+  $("acc-none").onclick = function () { acc.selected = {}; renderAcc(); };
+  $("acc-build").onclick = accBuild;
+  $("acc-open").onclick = function () {
+    api("POST", "/api/open", { what: "acc" }).then(function () { msg("acc-msg", "Книга открывается…", "ok"); })
+      .catch(function (e) { msg("acc-msg", e.message); });
+  };
+
   // ---------- кнопки ----------
   $("btn-pick").onclick = function () {
     setBusy(true); msg("scan-msg", "Откроется окно выбора папки (оно может быть позади браузера)…", "warn");
@@ -503,21 +647,44 @@
     scan();
   }).catch(function (e) { msg("scan-msg", e.message); });
 
-  // ---------- звёзды ----------
+  // ---------- летящие листья и солнечная пыльца ----------
   (function () {
-    var cv = $("stars"), ctx = cv.getContext("2d"), list = [], W, H;
+    var cv = $("nature"), ctx = cv.getContext("2d"), W, H, leaves = [], motes = [];
     var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var GREENS = ["#22c55e", "#16a34a", "#4ade80", "#84cc16", "#65a30d", "#a3e635"];
+    function rnd(a, b) { return a + Math.random() * (b - a); }
+    function leaf(top) {
+      return { x: rnd(-50, W), y: top ? rnd(-H, 0) : rnd(0, H), s: rnd(8, 18), rot: rnd(0, 6.28), vr: rnd(-.02, .02),
+               vy: rnd(.35, 1.0), sway: rnd(.6, 1.8), ph: rnd(0, 6.28), c: GREENS[(Math.random() * GREENS.length) | 0] };
+    }
     function resize() {
       var d = Math.min(window.devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
       cv.width = W * d; cv.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0);
-      list = []; for (var i = 0; i < W * H / 4500; i++) list.push({ x: Math.random() * W, y: Math.random() * H,
-        r: Math.random() * 1.2 + .2, a: Math.random() * 6.3, s: Math.random() * .02 + .004,
-        c: Math.random() < .75 ? "255,255,255" : (Math.random() < .5 ? "165,243,252" : "240,171,252") });
+      leaves = []; for (var i = 0; i < Math.round(W / 70); i++) leaves.push(leaf(false));
+      motes = []; for (var j = 0; j < Math.round(W / 25); j++)
+        motes.push({ x: rnd(0, W), y: rnd(0, H * .75), r: rnd(.8, 2.4), a: rnd(0, 6.28), s: rnd(.01, .03), vy: rnd(-.15, -.05) });
     }
+    function drawLeaf(l) {
+      ctx.save(); ctx.translate(l.x, l.y); ctx.rotate(l.rot);
+      ctx.fillStyle = l.c; ctx.beginPath();
+      ctx.moveTo(0, -l.s); ctx.quadraticCurveTo(l.s * .9, 0, 0, l.s); ctx.quadraticCurveTo(-l.s * .9, 0, 0, -l.s); ctx.fill();
+      ctx.strokeStyle = "rgba(20,83,45,.45)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, -l.s * .8); ctx.lineTo(0, l.s * 1.15); ctx.stroke();
+      ctx.restore();
+    }
+    var t = 0;
     function frame() {
-      ctx.clearRect(0, 0, W, H);
-      list.forEach(function (s) { s.a += s.s; ctx.fillStyle = "rgba(" + s.c + "," + (.3 + .7 * Math.abs(Math.sin(s.a))).toFixed(2) + ")";
-        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill(); });
+      t += 1; ctx.clearRect(0, 0, W, H);
+      motes.forEach(function (m) {
+        m.a += m.s; m.y += m.vy; if (m.y < -10) { m.y = H * .75; m.x = rnd(0, W); }
+        var o = .25 + .55 * Math.abs(Math.sin(m.a));
+        ctx.fillStyle = "rgba(253,224,71," + o.toFixed(2) + ")";
+        ctx.beginPath(); ctx.arc(m.x + Math.sin(m.a * 2) * 6, m.y, m.r, 0, 6.283); ctx.fill();
+      });
+      leaves.forEach(function (l, i) {
+        l.y += l.vy; l.x += Math.sin(t * .02 + l.ph) * l.sway * .6 + .25; l.rot += l.vr;
+        if (l.y > H + 30 || l.x > W + 40) leaves[i] = leaf(true);
+        drawLeaf(l);
+      });
       if (!reduce) requestAnimationFrame(frame);
     }
     resize(); addEventListener("resize", function () { resize(); if (reduce) frame(); }); frame();
