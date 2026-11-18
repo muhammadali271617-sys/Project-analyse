@@ -153,9 +153,11 @@ def start_job(kind, fn):
         except PermissionError as e:
             set_job(state="error", error=f"Нет доступа к файлу: {e.filename}. Возможно, он открыт в Excel — "
                                          f"закройте его и попробуйте снова.")
-        except Exception as e:
+        except SystemExit as e:  # sys.exit() внутри вспомогательных модулей — это понятное сообщение
+            set_job(state="error", error=str(e) or "Операция прервана.")
+        except BaseException as e:  # что бы ни случилось — задание не должно «зависнуть»
             log(traceback.format_exc())
-            set_job(state="error", error=f"Непредвиденная ошибка: {e}. Подробности в файле {LOG.name}.")
+            set_job(state="error", error=f"Непредвиденная ошибка: {e!r}. Подробности в файле {LOG.name}.")
 
     threading.Thread(target=worker, daemon=True).start()
     return True
@@ -258,6 +260,7 @@ def do_acc_scan():
 
     def job(progress):
         import po_buhgalteram as pb
+        log(f"Шаг 4: читаю {src}")
         progress(f"Читаю «{src.name}»…")
         with pb.zipfile.ZipFile(src) as z:
             names = [n for n, _, _ in pb.sheet_parts(z)]

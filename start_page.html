@@ -640,6 +640,10 @@
   // ---------- 4. ошибки по бухгалтерам ----------
   var acc = { months: [], selected: {} };
   function accScan() {
+    // карточку показываем сразу — пока читаем проверенную копию, виден прогресс
+    show("acc-card", true); msg("acc-msg"); $("acc-list").innerHTML = ""; show("acc-opens", false);
+    $("acc-src").textContent = ""; $("acc-months").innerHTML = ""; $("acc-sum").textContent = "";
+    $("acc-build").disabled = true;
     api("POST", "/api/acc-scan").then(function (r) {
       if (r.error) throw new Error(r.error);
       setBusy(true);
@@ -647,10 +651,16 @@
         acc.months = res.months || []; acc.selected = {};
         if (acc.months.length) acc.selected[acc.months[acc.months.length - 1].key] = true;
         $("acc-src").textContent = "Источник: " + res.file + " · лист «" + res.sheet + "»";
-        renderAcc(); show("acc-card", true);
+        renderAcc();
         if (!acc.months.length) msg("acc-msg", "В проверенной копии нет строк с заполненной «Проблемой» (AX).", "warn");
-      }, function () { show("acc-card", false); }, "a-");
-    }).catch(function () { show("acc-card", false); });
+      }, function (e) {
+        msg("acc-msg", "Не удалось подготовить книгу по бухгалтерам: " + e +
+          " Если непонятно почему — пришлите файл «start» (журнал) из папки программы.");
+      }, "a-");
+    }).catch(function (e) {
+      if (/Нет проверенной копии/.test(e.message)) { show("acc-card", false); return; }  // ещё не было проверки
+      msg("acc-msg", "Не удалось подготовить книгу по бухгалтерам: " + e.message);
+    });
   }
   function renderAcc() {
     var box = $("acc-months"); box.innerHTML = ""; var n = 0, rows = 0;
