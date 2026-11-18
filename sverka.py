@@ -31,6 +31,9 @@ import pdfplumber
 
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
+# Меняется при каждом обновлении программы — видно на странице, в отчёте и в Excel
+VERSION = "2026-11-18 · v7"
+
 # ---------------------------------------------------------------- допуски
 TOL_QTY = 0.001
 TOL_SUM = 1.0
@@ -637,7 +640,7 @@ def run_check(folder, data, period, progress=None, report_path=None, excel_out=N
         dst = Path(excel_out) if excel_out else xlsx.with_name(f"{xlsx.stem}_проверено{xlsx.suffix}")
         _say(progress, "Записываю результаты в копию Excel…")
         try:
-            excel_writer.write_copy(xlsx, dst, ws_name, results, lambda code: hist_stats(code, hist))
+            excel_writer.write_copy(xlsx, dst, ws_name, results, lambda code: hist_stats(code, hist), VERSION)
         except PermissionError:
             excel_error = (f"Не удалось сохранить «{dst.name}» — этот файл открыт в Excel. "
                            f"Закройте его и запустите проверку снова.")
@@ -871,7 +874,7 @@ color:var(--tx);font:inherit;margin-bottom:14px}}
 </style></head><body><main>
 <h1>Проблемные коды</h1>
 <p class="sub">{esc(xlsx_name)} · лист «{esc(ws_name)}» · период: {esc(', '.join(month_name(p) for p in sorted(period)))}
- · фактур в папке: {len(invoices)} · сформировано {now}</p>
+ · фактур в папке: {len(invoices)} · сформировано {now} · версия программы {VERSION}</p>
 <div class="card"><div class="stats">
 <div class="stat"><b>{len(results)}</b><span>цветных строк</span></div>
 {stat('OK', 'ok')}{stat('ПЕРЕПУТАНЫ СТРОКИ', 'bad')}{stat('ОШИБКА', 'bad')}{stat('ПОЗИЦИЯ НЕ НАЙДЕНА', 'bad')}

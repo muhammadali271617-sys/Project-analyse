@@ -74,9 +74,35 @@ class _Stub:  # чтобы обработчики ошибок работали,
 
 
 sverka = _Stub
+_loaded_mtimes = {}
+
+
+def _mtimes():
+    return {n: (HERE / f"{n}.py").stat().st_mtime for n in ("sverka", "excel_writer") if (HERE / f"{n}.py").exists()}
+
+
+def reload_if_changed():
+    """Если sverka.py / excel_writer.py заменили, пока страница открыта, — подгружаем новые.
+    Иначе продолжала бы работать старая версия из памяти."""
+    global sverka
+    if LIBS_ERROR or sverka is _Stub:
+        return
+    now = _mtimes()
+    if now != _loaded_mtimes:
+        import importlib
+        if "excel_writer" in sys.modules:
+            importlib.reload(sys.modules["excel_writer"])
+        sverka = importlib.reload(sverka)
+        _loaded_mtimes.clear()
+        _loaded_mtimes.update(now)
+        ST.data = ST.data_key = None   # данные Excel перечитаем уже новой версией
+        log(f"Обновлены файлы программы, версия {getattr(sverka, 'VERSION', '?')}")
+
+
 if not LIBS_ERROR:
     try:
         import sverka  # noqa: E402
+        _loaded_mtimes.update(_mtimes())
     except Exception as e:  # синтаксическая ошибка и т.п.
         LIBS_ERROR = f"Не удалось загрузить sverka.py: {e}"
         log(traceback.format_exc())
@@ -132,6 +158,7 @@ def start_job(kind, fn):
 
 # ---------------------------------------------------------------- действия
 def do_scan(folder, excel=None, sheet=None):
+    reload_if_changed()
     folder = Path(folder)
     if not folder.is_dir():
         raise sverka.CheckError(f"Папка не найдена: {folder}")
@@ -156,7 +183,8 @@ def do_scan(folder, excel=None, sheet=None):
             ST.data_key = key
         d = ST.data
         months = [{"key": k, "name": sverka.month_name(k), "count": d["months"][k]} for k in sorted(d["months"])]
-        return {"excel": xlsx.name, "excels": [p.name for p in excels], "sheet": d["ws_name"],
+        return {"version": getattr(sverka, "VERSION", None),
+                "excel": xlsx.name, "excels": [p.name for p in excels], "sheet": d["ws_name"],
                 "sheets": d["sheets"], "months": months, "pdfs": len(pdfs),
                 "open_warning": (f"Файл «{xlsx.name}» сейчас открыт в Excel. Проверка его только читает, "
                                  f"это не мешает." if sverka.is_open_in_excel(xlsx) else None)}
@@ -179,6 +207,9 @@ def row_json(r):
 
 
 def do_run(period):
+    if _mtimes() != _loaded_mtimes:
+        raise sverka.CheckError("Файлы программы обновились — нажмите «↻ Прочитать», чтобы загрузить новую версию, "
+                                "и затем «Проверить».")
     data = ST.data
     if not data:
         raise sverka.CheckError("Сначала выберите папку с Excel.")
@@ -276,7 +307,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         ST.last_seen = time.time()
         if self.path == "/api/state":
-            return self.send_json({"folder": ST.folder, "libs_error": LIBS_ERROR, "job": ST.job})
+            return self.send_json({"folder": ST.folder, "libs_error": LIBS_ERROR, "job": ST.job,
+                                   "version": getattr(sverka, "VERSION", None)})
         if self.path == "/api/job":
             return self.send_json(ST.job)
         self.send_json({"error": "Не найдено"}, 404)

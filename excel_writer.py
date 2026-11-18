@@ -286,13 +286,15 @@ def unshare_formulas(sheet, cleared_rows):
     return CELL_RX.sub(fix_cell, sheet), count
 
 
-def write_copy(src, dst, sheet_name, results, hist_stats_fn):
+def write_copy(src, dst, sheet_name, results, hist_stats_fn, version=None):
     with zipfile.ZipFile(src) as z:
         sp = sheet_path(z, sheet_name)
         sheet = z.read(sp).decode("utf-8")
         styles, S = add_styles(z.read("xl/styles.xml").decode("utf-8"))
 
         new = {2: {col_idx(c): c_str(f"{c}2", title, S["head"]) for c, title, _ in HEADERS}}
+        if version:
+            new[2][FIRST_COL] = c_str(f"AV2", f"Сверка: статус\n(версия {version})", S["head"])
         for r in results:
             rn = r["row"]["rn"]
             new[rn] = row_cells(rn, r, hist_stats_fn(r["row"]["code"]), S)

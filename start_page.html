@@ -210,7 +210,7 @@
     <div class="hint">Нажмите на строку, чтобы увидеть подробности и сравнение чисел.</div>
   </section>
 </main>
-<footer>Работает офлайн · сервер только на этом компьютере (127.0.0.1)</footer>
+<footer>Работает офлайн · сервер только на этом компьютере (127.0.0.1) · <span id="ver"></span></footer>
 
 <script>
 (function () {
@@ -305,6 +305,7 @@
       show("run-card", false);
       fillSelect("sheet-select", r.need_sheet); show("choose-sheet", true); return;
     }
+    if (r.version) $("ver").textContent = "версия программы " + r.version;
     state.excel = r.excel; state.sheet = r.sheet;
     $("i-excel").textContent = r.excel; $("i-sheet").textContent = r.sheet; $("i-pdfs").textContent = r.pdfs;
     show("scan-info", true);
@@ -493,6 +494,7 @@
   // ---------- старт ----------
   api("GET", "/api/state").then(function (s) {
     $("folder").value = s.folder || "";
+    if (s.version) $("ver").textContent = "версия программы " + s.version;
     if (s.libs_error) {
       $("libs").textContent = s.libs_error; show("libs", true);
       ["btn-pick", "btn-scan"].forEach(function (id) { $(id).disabled = true; });
