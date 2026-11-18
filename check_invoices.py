@@ -76,7 +76,10 @@ def read_invoice_number(pdf_path: Path):
 def file_number_from_name(stem: str) -> str:
     """Номер из имени файла. Текст в скобках игнорируется:
     "543 (Next Glass)" → "543", "52 (1)" → "52"."""
-    return re.sub(r"\s+", " ", re.sub(r"\([^)]*\)", "", stem)).strip()
+    stem = re.sub(r"\s+", " ", re.sub(r"\([^)]*\)", "", stem)).strip()
+    # имя, которое даёт Didox при скачивании: «Счет_фактура_без_акта_6790_от_12_10_2026_»
+    m = re.match(r"(?i)^сч[её]т[_ -]фактура(?:[_ ]без[_ ]акта)?[_ ](.+?)[_ ]от[_ ]\d{2}[_.]\d{2}[_.]\d{4}_?$", stem)
+    return m.group(1) if m else stem
 
 
 def check_file(pdf_path: Path) -> dict:

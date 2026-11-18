@@ -156,6 +156,12 @@ CONTRACT_RX = re.compile(r"(\d{2}\.\d{2}\.\d{4})\s+даги\s+(.+?)-сонли\s
 SUPPLIER_RX = re.compile(r"Етказиб берувчи:\s*(.+?)\s+Сотиб олувчи")
 INN_RX = re.compile(r"Етказиб берувчининг СТИР\s+(\d{9})")
 
+# Официальный PDF-бланк Didox (кнопка «Скачать», файлы «Счет_фактура_без_акта_…»): шапка на русском
+RU_NUM_RX = re.compile(r"Сч[её]т-фактура\s*№\s*(\S+)\s+от\s+(\d{2}\.\d{2}\.\d{4})", re.I)
+RU_CONTRACT_RX = re.compile(r"к договору\s*№\s*(.+?)\s+от\s+(\d{2}\.\d{2}\.\d{4})", re.I)
+RU_SUPPLIER_RX = re.compile(r"Поставщик:\s*(.+?)\s+Покупатель:")
+RU_INN_RX = re.compile(r"Идентификационный номер\s+(\d{9})")
+
 
 def parse_invoice(path):
     inv = {"file": path.name, "items": [], "error": None}
@@ -164,13 +170,16 @@ def parse_invoice(path):
             t0 = pdf.pages[0].extract_text() or ""
             m = HEADER_RX.search(t0)
             mb = BODY_RX.search(t0)
-            inv["num"] = m.group(1) if m else (mb.group(2) if mb else None)
-            inv["date"] = m.group(2) if m else (mb.group(1) if mb else None)
+            mr = RU_NUM_RX.search(t0)
+            inv["num"] = m.group(1) if m else (mb.group(2) if mb else (mr.group(1) if mr else None))
+            inv["date"] = m.group(2) if m else (mb.group(1) if mb else (mr.group(2) if mr else None))
             m = CONTRACT_RX.search(t0)
-            inv["contract"], inv["contract_date"] = (m.group(2), m.group(1)) if m else (None, None)
-            m = SUPPLIER_RX.search(t0)
+            mr = RU_CONTRACT_RX.search(t0)
+            inv["contract"], inv["contract_date"] = ((m.group(2), m.group(1)) if m else
+                                                     (mr.group(1), mr.group(2)) if mr else (None, None))
+            m = SUPPLIER_RX.search(t0) or RU_SUPPLIER_RX.search(t0)
             inv["supplier"] = m.group(1).strip() if m else None
-            m = INN_RX.search(t0)
+            m = INN_RX.search(t0) or RU_INN_RX.search(t0)
             inv["inn"] = m.group(1) if m else None
             for page in pdf.pages:
                 for tb in page.extract_tables():
@@ -194,6 +203,9 @@ def parse_invoice(path):
     except Exception as e:  # битый PDF
         inv["error"] = f"Файл не читается: {e}"
         return inv
+    for it in inv["items"]:
+        # перенос строки внутри артикула: «RST- 534A», «0204- 008355» → «RST-534A», «0204-008355»
+        it["name"] = re.sub(r"(?<=\w)-\s+(?=\w)", "-", it["name"])
     if not inv["num"]:
         inv["error"] = "Не найден номер счёт-фактуры — документ не соответствует стандарту Didox"
     elif not inv["items"]:
