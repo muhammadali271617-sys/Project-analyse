@@ -332,20 +332,6 @@
     <div id="res-msg"></div>
   </section>
 
-  <section class="card hidden" id="table-card">
-    <h2>Проблемные строки <span class="sub" id="t-count" style="font-weight:400"></span></h2>
-    <div class="tools">
-      <input type="text" id="search" placeholder="Поиск по коду, названию, номеру фактуры…" style="font-family:inherit">
-      <div class="filters" id="filters"></div>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Статус</th><th>Строка</th><th>Код</th><th>Товар (Excel)</th><th>№ вх.</th><th>Фактура</th><th>Проблема</th></tr></thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-    <div class="hint">Нажмите на строку, чтобы увидеть подробности и сравнение чисел.</div>
-  </section>
   <section class="card hidden" id="acc-card">
     <h2><span class="step">4</span> Ошибки по бухгалтерам</h2>
     <div class="hint" style="margin-top:0">Новая книга: у каждого бухгалтера (колонка X) свой лист — точная копия листа проверки
@@ -369,6 +355,22 @@
     <div class="acc-list" id="acc-list"></div>
     <div class="opens hidden" id="acc-opens"><button class="btn" id="acc-open">📗 Открыть книгу по бухгалтерам</button></div>
   </section>
+
+  <section class="card hidden" id="table-card">
+    <h2>Проблемные строки <span class="sub" id="t-count" style="font-weight:400"></span></h2>
+    <div class="tools">
+      <input type="text" id="search" placeholder="Поиск по коду, названию, номеру фактуры…" style="font-family:inherit">
+      <div class="filters" id="filters"></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Статус</th><th>Строка</th><th>Код</th><th>Товар (Excel)</th><th>№ вх.</th><th>Фактура</th><th>Проблема</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="hint">Нажмите на строку, чтобы увидеть подробности и сравнение чисел.</div>
+  </section>
+
 </main>
 <footer>Работает офлайн · сервер только на этом компьютере (127.0.0.1) · <span id="ver"></span></footer>
 
